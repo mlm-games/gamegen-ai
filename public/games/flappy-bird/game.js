@@ -1,100 +1,73 @@
 // public/games/flappy-bird/game.js
 class FlappyBirdGame extends Phaser.Scene {
-  constructor(config) {
+  constructor() {
     super({ key: 'FlappyBirdGame' });
-    this.gameConfig = config || {};
+    this.gameConfig = window.GAME_CONFIG || {};
+    if (!this.gameConfig.assets) this.gameConfig.assets = {};
+    if (!this.gameConfig.parameters) this.gameConfig.parameters = {};
     this.score = 0;
   }
 
   preload() {
-    console.log('Game config:', this.gameConfig);
-    
     // Load custom assets if provided
     if (this.gameConfig.assets && this.gameConfig.assets.player) {
       const playerAsset = this.gameConfig.assets.player;
-      console.log('Loading custom player:', playerAsset.substring ? playerAsset.substring(0, 50) + '...' : playerAsset);
-      if (playerAsset.startsWith && playerAsset.startsWith('data:')) {
-        // Base64 image
+      if (playerAsset.startsWith('data:')) {
         this.textures.addBase64('bird', playerAsset);
       } else {
-        // URL
         this.load.image('bird', playerAsset);
       }
     }
     
     if (this.gameConfig.assets && this.gameConfig.assets.background) {
       const bgAsset = this.gameConfig.assets.background;
-      console.log('Loading custom background:', bgAsset.substring ? bgAsset.substring(0, 50) + '...' : bgAsset);
-      if (bgAsset.startsWith && bgAsset.startsWith('data:')) {
-        // Base64 image
+      if (bgAsset.startsWith('data:')) {
         this.textures.addBase64('background', bgAsset);
       } else {
-        // URL
         this.load.image('background', bgAsset);
       }
     }
     
     if (this.gameConfig.assets && this.gameConfig.assets.obstacles && Array.isArray(this.gameConfig.assets.obstacles) && this.gameConfig.assets.obstacles[0]) {
       const pipeAsset = this.gameConfig.assets.obstacles[0];
-      console.log('Loading custom pipe:', pipeAsset.substring ? pipeAsset.substring(0, 50) + '...' : pipeAsset);
-      if (pipeAsset.startsWith && pipeAsset.startsWith('data:')) {
-        // Base64 image
+       if (pipeAsset.startsWith('data:')) {
         this.textures.addBase64('pipe', pipeAsset);
       } else {
-        // URL
         this.load.image('pipe', pipeAsset);
       }
     }
     
-    // Load default assets as fallback (these will be embedded in exported version)
+    // Load default assets as fallback
     this.load.image('bird-default', '/games/flappy-bird/assets/bird.png');
     this.load.image('background-default', '/games/flappy-bird/assets/background.png');
     this.load.image('pipe-default', '/games/flappy-bird/assets/pipe.png');
-    
-    // Add load complete handler
-    this.load.on('complete', () => {
-      console.log('All assets loaded');
-    });
-    
-    // Add error handling
-    this.load.on('loaderror', (file) => {
-      console.error('Failed to load:', file.src);
-    });
   }
 
   create() {
-    // Set background color first
     this.cameras.main.setBackgroundColor('#87CEEB');
     
-    // Check which assets loaded successfully
     const birdAsset = this.textures.exists('bird') ? 'bird' : 'bird-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const pipeAsset = this.textures.exists('pipe') ? 'pipe' : 'pipe-default';
     
-    console.log('Using assets:', { bird: birdAsset, background: bgAsset, pipe: pipeAsset });
+    this.add.tileSprite(400, 300, 800, 600, bgAsset);
     
-    // Background
-    const bg = this.add.image(400, 300, bgAsset);
-    bg.setDisplaySize(800, 600);
-    
-    // Bird
     this.bird = this.physics.add.sprite(100, 300, birdAsset);
     this.bird.setGravityY(this.gameConfig.parameters?.gravity || 800);
     this.bird.setCollideWorldBounds(true);
-    this.bird.setScale(0.5); // Scale down if needed
     
-    // Pipes
-    this.pipes = this.physics.add.group();
+    this.pipes = this.physics.add.group({
+        allowGravity: false,
+        immovable: true
+    });
     
-    // Spawn pipes timer
     this.time.addEvent({
       delay: this.gameConfig.parameters?.pipeSpawnDelay || 1500,
-      callback: () => this.spawnPipe(pipeAsset),
+      callback: () => this.spawnPipes(pipeAsset),
       callbackScope: this,
       loop: true
     });
     
-    // Score text
     this.scoreText = this.add.text(16, 16, 'Score: 0', { 
       fontSize: '32px', 
       fill: '#fff',
@@ -102,61 +75,74 @@ class FlappyBirdGame extends Phaser.Scene {
       strokeThickness: 4
     });
     
-    // Controls
     this.input.on('pointerdown', () => this.jump());
     if (this.input.keyboard) {
       this.input.keyboard.on('keydown-SPACE', () => this.jump());
     }
     
-    // Collisions
     this.physics.add.collider(this.bird, this.pipes, () => this.gameOver());
   }
 
   update() {
     if (!this.bird) return;
+
+    if (this.bird.angle < 20) {
+        this.bird.angle += 1;
+    }
     
-    // Check if bird is out of bounds
     if (this.bird.y < 0 || this.bird.y > 600) {
       this.gameOver();
     }
     
-    // Remove pipes that have gone off screen
-    this.pipes.children.entries.forEach(pipe => {
-      if (pipe.x < -50) {
+    const scorePipes = [];
+    this.pipes.children.each(pipe => {
+      if (pipe.getBounds().right < 0) {
         pipe.destroy();
-        this.score++;
-        this.scoreText.setText('Score: ' + this.score);
+      } else if (pipe.x < this.bird.x && !pipe.userData?.scored) {
+        scorePipes.push(pipe);
       }
     });
-  }
 
-  jump() {
-    if (this.bird) {
-      this.bird.setVelocityY(this.gameConfig.parameters?.jumpVelocity || -350);
+    if (scorePipes.length > 0) {
+        this.score += 0.5; // Each pair of pipes counts as 1
+        this.scoreText.setText('Score: ' + Math.floor(this.score));
+        scorePipes.forEach(p => p.userData = { scored: true });
     }
   }
 
-  spawnPipe(pipeAsset) {
-    const gap = this.gameConfig.parameters?.gapSize || 120;
-    const pipeTop = Phaser.Math.Between(50, 350 - gap);
-    
-    // Top pipe
-    const topPipe = this.pipes.create(800, pipeTop, pipeAsset);
-    topPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
-    topPipe.setOrigin(0.5, 1);
-    topPipe.setScale(0.5, 1); // Scale width if needed
-    
-    // Bottom pipe
-    const bottomPipe = this.pipes.create(800, pipeTop + gap, pipeAsset);
-    bottomPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
+  jump() {
+    if (this.bird && this.bird.body) {
+      this.bird.setVelocityY(this.gameConfig.parameters?.jumpVelocity || -350);
+      this.tweens.add({
+        targets: this.bird,
+        angle: -20,
+        duration: 100,
+        ease: 'Linear'
+      });
+    }
+  }
+
+  spawnPipes(pipeAsset) {
+    const gap = this.gameConfig.parameters?.gapSize || 150;
+    const pipeY = Phaser.Math.Between(150, 450);
+
+    const pipeSpeed = -(this.gameConfig.parameters?.pipeSpeed || 200);
+
+    const topPipe = this.pipes.create(800, pipeY - gap / 2, pipeAsset);
+    topPipe.setOrigin(0.5, 1).setFlipY(true);
+    topPipe.setVelocityX(pipeSpeed);
+
+    const bottomPipe = this.pipes.create(800, pipeY + gap / 2, pipeAsset);
     bottomPipe.setOrigin(0.5, 0);
-    bottomPipe.setFlipY(true);
-    bottomPipe.setScale(0.5, 1); // Scale width if needed
+    bottomPipe.setVelocityX(pipeSpeed);
   }
 
   gameOver() {
-    this.scene.restart();
-    this.score = 0;
+    if (this.scene.isActive()) {
+        this.physics.pause();
+        this.bird.setTint(0xff0000);
+        this.time.delayedCall(1000, () => this.scene.restart());
+    }
   }
 }
 
@@ -165,7 +151,18 @@ const phaserGameConfig = {
     width: 800,
     height: 600,
     parent: 'game-container',
-    physics: { default: 'arcade' },
-    scene: [FlappyBirdGame] // NOTE: The class name here must match your scene class
+    physics: { 
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    },
+    scene: [FlappyBirdGame]
 };
-new Phaser.Game(phaserGameConfig);
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    new Phaser.Game(phaserGameConfig);
+} else {
+    document.addEventListener('DOMContentLoaded', () => new Phaser.Game(phaserGameConfig));
+}

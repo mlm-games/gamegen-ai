@@ -1,24 +1,35 @@
 class EndlessRunnerGame extends Phaser.Scene {
-  constructor(config) {
+  constructor() {
     super({ key: 'EndlessRunnerGame' });
-    this.gameConfig = config;
+    this.gameConfig = window.GAME_CONFIG || {};
+    if (!this.gameConfig.assets) this.gameConfig.assets = {};
+    if (!this.gameConfig.parameters) this.gameConfig.parameters = {};
+
     this.score = 0;
-    this.gameSpeed = config.parameters.speed || 200;
+    this.gameSpeed = this.gameConfig.parameters.speed || 200;
   }
 
   preload() {
-   
-    if (this.gameConfig.assets.player) {
-      this.load.image('player', this.gameConfig.assets.player);
+    if (this.gameConfig.assets && this.gameConfig.assets.player) {
+      const asset = this.gameConfig.assets.player;
+      if (asset.startsWith('data:')) {
+        this.textures.addBase64('player', asset);
+      } else {
+        this.load.image('player', asset);
+      }
     }
     if (this.gameConfig.assets.background) {
       this.load.image('background', this.gameConfig.assets.background);
     }
     if (this.gameConfig.assets.obstacles && this.gameConfig.assets.obstacles[0]) {
-      this.load.image('obstacle', this.gameConfig.assets.obstacles[0]);
+        const asset = this.gameConfig.assets.obstacles[0];
+        if (asset.startsWith('data:')) {
+            this.textures.addBase64('obstacle', asset);
+        } else {
+            this.load.image('obstacle', asset);
+        }
     }
     
-   
     this.load.image('player-default', '/games/endless-runner/assets/player.png');
     this.load.image('background-default', '/games/endless-runner/assets/background.png');
     this.load.image('obstacle-default', '/games/endless-runner/assets/obstacle.png');
@@ -26,28 +37,22 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 
   create() {
-   
     const playerAsset = this.textures.exists('player') ? 'player' : 'player-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const obstacleAsset = this.textures.exists('obstacle') ? 'obstacle' : 'obstacle-default';
     
-   
     this.bg = this.add.tileSprite(400, 300, 800, 600, bgAsset);
     
-   
     this.ground = this.physics.add.staticGroup();
-    this.ground.create(400, 568, 'ground-default').setScale(2, 1).refreshBody();
+    this.ground.create(400, 580, 'ground-default').setScale(2, 1).refreshBody();
     
-   
     this.player = this.physics.add.sprite(100, 450, playerAsset);
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
     this.player.setGravityY(this.gameConfig.parameters.gravity || 800);
     
-   
     this.obstacles = this.physics.add.group();
     
-   
     this.time.addEvent({
       delay: this.gameConfig.parameters.spawnRate || 2000,
       callback: () => this.spawnObstacle(obstacleAsset),
@@ -55,7 +60,6 @@ class EndlessRunnerGame extends Phaser.Scene {
       loop: true
     });
     
-   
     this.scoreText = this.add.text(16, 16, 'Score: 0', { 
       fontSize: '32px', 
       fill: '#fff',
@@ -63,45 +67,51 @@ class EndlessRunnerGame extends Phaser.Scene {
       strokeThickness: 4
     });
     
-   
-    this.input.on('pointerdown', () => this.jump());
-    this.input.keyboard.on('keydown-SPACE', () => this.jump());
+    this.input.on('pointerdown', () => this.jump(), this);
+    this.input.keyboard.on('keydown-SPACE', () => this.jump(), this);
     
-   
     this.physics.add.collider(this.player, this.ground);
-    this.physics.add.collider(this.player, this.obstacles, () => this.gameOver());
+    this.physics.add.collider(this.player, this.obstacles, this.gameOver, null, this);
   }
 
-  update() {
-   
-    this.bg.tilePositionX += this.gameSpeed * 0.02;
+  update(time, delta) {
+    this.bg.tilePositionX += (this.gameSpeed / 1000) * delta * 20;
     
-   
-    this.obstacles.children.entries.forEach(obstacle => {
-      obstacle.x -= this.gameSpeed * 0.016;
-      
-      if (obstacle.x < -50) {
-        obstacle.destroy();
-        this.score++;
-        this.scoreText.setText('Score: ' + this.score);
+    this.obstacles.children.iterate(obstacle => {
+      if (obstacle) {
+        obstacle.x -= (this.gameSpeed / 1000) * delta * 60;
+        
+        if (obstacle.x < -50) {
+          obstacle.destroy();
+          this.score++;
+          this.scoreText.setText('Score: ' + this.score);
+        }
       }
     });
   }
 
   jump() {
     if (this.player.body.touching.down) {
-      this.player.setVelocityY(this.gameConfig.parameters.jumpVelocity || -330);
+      this.player.setVelocityY(this.gameConfig.parameters.jumpVelocity || -400);
     }
   }
 
   spawnObstacle(obstacleAsset) {
-    const obstacle = this.obstacles.create(850, 500, obstacleAsset);
+    const obstacle = this.obstacles.create(900, 515, obstacleAsset);
     obstacle.setImmovable(true);
+    obstacle.body.setAllowGravity(false);
   }
 
   gameOver() {
-    this.scene.restart();
-    this.score = 0;
+    this.physics.pause();
+    this.player.setTint(0xff0000);
+    this.time.addEvent({
+        delay: 1500,
+        callback: () => {
+            this.scene.restart();
+        },
+        loop: false
+    });
   }
 }
 
@@ -110,7 +120,18 @@ const phaserGameConfig = {
     width: 800,
     height: 600,
     parent: 'game-container',
-    physics: { default: 'arcade' },
-    scene: [EndlessRunnerGame]
+    physics: { 
+        default: 'arcade',
+        arcade: {
+            gravity: { y: 300 },
+            debug: false
+        }
+    },
+    scene: EndlessRunnerGame
 };
-new Phaser.Game(phaserGameConfig);
+
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+    new Phaser.Game(phaserGameConfig);
+} else {
+    document.addEventListener('DOMContentLoaded', () => new Phaser.Game(phaserGameConfig));
+}
