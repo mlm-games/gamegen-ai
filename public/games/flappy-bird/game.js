@@ -1,19 +1,22 @@
 class FlappyBirdGame extends Phaser.Scene {
   constructor(config) {
     super({ key: 'FlappyBirdGame' });
-    this.gameConfig = config;
+    this.gameConfig = config || {};
     this.score = 0;
   }
 
   preload() {
+    // Enable CORS for external images
+    this.load.setCORS('anonymous');
+    
     // Load assets from config
-    if (this.gameConfig.assets.player) {
+    if (this.gameConfig.assets && this.gameConfig.assets.player) {
       this.load.image('bird', this.gameConfig.assets.player);
     }
-    if (this.gameConfig.assets.background) {
+    if (this.gameConfig.assets && this.gameConfig.assets.background) {
       this.load.image('background', this.gameConfig.assets.background);
     }
-    if (this.gameConfig.assets.obstacles && this.gameConfig.assets.obstacles[0]) {
+    if (this.gameConfig.assets && this.gameConfig.assets.obstacles && this.gameConfig.assets.obstacles[0]) {
       this.load.image('pipe', this.gameConfig.assets.obstacles[0]);
     }
     
@@ -24,7 +27,7 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 
   create() {
-    // Use custom or default assets
+    // Check if custom assets loaded successfully
     const birdAsset = this.textures.exists('bird') ? 'bird' : 'bird-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const pipeAsset = this.textures.exists('pipe') ? 'pipe' : 'pipe-default';
@@ -34,7 +37,7 @@ class FlappyBirdGame extends Phaser.Scene {
     
     // Bird
     this.bird = this.physics.add.sprite(100, 300, birdAsset);
-    this.bird.setGravityY(this.gameConfig.parameters.gravity || 800);
+    this.bird.setGravityY(this.gameConfig.parameters?.gravity || 800);
     this.bird.setCollideWorldBounds(true);
     
     // Pipes

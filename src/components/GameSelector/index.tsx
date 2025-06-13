@@ -17,9 +17,9 @@ const gameTemplates: GameTemplate[] = [
       theme: 'classic',
       difficulty: 'medium',
       assets: {
-        player: '/game-assets/flappy-bird/bird.png',
-        background: '/game-assets/flappy-bird/background.png',
-        obstacles: ['/game-assets/flappy-bird/pipe.png']
+        player: '/games/flappy-bird/assets/bird.png',
+        background: '/games/flappy-bird/assets/background.png',
+        obstacles: ['/games/flappy-bird/assets/pipe.png']
       },
       parameters: {
         gravity: 800,
@@ -41,9 +41,9 @@ const gameTemplates: GameTemplate[] = [
       theme: 'classic',
       difficulty: 'medium',
       assets: {
-        player: '/game-assets/endless-runner/player.png',
-        background: '/game-assets/endless-runner/background.png',
-        obstacles: ['/game-assets/endless-runner/obstacle.png']
+        player: '/games/endless-runner/assets/player.png',
+        background: '/games/endless-runner/assets/background.png',
+        obstacles: ['/games/endless-runner/assets/obstacle.png']
       },
       parameters: {
         speed: 200,
@@ -53,7 +53,77 @@ const gameTemplates: GameTemplate[] = [
       }
     }
   },
-  // Add other games...
+  {
+    id: 'whack-a-mole',
+    name: 'Whack-a-Mole',
+    thumbnail: '/thumbnails/whack-a-mole.png',
+    description: 'Test your reflexes by whacking moles',
+    defaultConfig: {
+      id: 'whack-a-mole',
+      name: 'Whack-a-Mole',
+      theme: 'classic',
+      difficulty: 'medium',
+      assets: {
+        player: '/games/whack-a-mole/assets/mole.png',
+        background: '/games/whack-a-mole/assets/background.png',
+        obstacles: ['/games/whack-a-mole/assets/hole.png']
+      },
+      parameters: {
+        spawnRate: 1000,
+        moleUpTime: 1500,
+        speed: 1
+      }
+    }
+  },
+  {
+    id: 'match-3',
+    name: 'Match-3',
+    thumbnail: '/thumbnails/match-3.png',
+    description: 'Match colorful gems in this puzzle game',
+    defaultConfig: {
+      id: 'match-3',
+      name: 'Match-3',
+      theme: 'classic',
+      difficulty: 'medium',
+      assets: {
+        background: '/games/match-3/assets/background.png',
+        items: [
+          '/games/match-3/assets/gem-red.png',
+          '/games/match-3/assets/gem-blue.png',
+          '/games/match-3/assets/gem-green.png',
+          '/games/match-3/assets/gem-yellow.png',
+          '/games/match-3/assets/gem-purple.png'
+        ]
+      },
+      parameters: {
+        gridSize: 8,
+        matchSize: 3,
+        swapSpeed: 300
+      }
+    }
+  },
+  {
+    id: 'crossy-road',
+    name: 'Crossy Road',
+    thumbnail: '/thumbnails/crossy-road.png',
+    description: 'Cross roads and avoid vehicles',
+    defaultConfig: {
+      id: 'crossy-road',
+      name: 'Crossy Road',
+      theme: 'classic',
+      difficulty: 'medium',
+      assets: {
+        player: '/games/crossy-road/assets/chicken.png',
+        background: '/games/crossy-road/assets/background.png',
+        obstacles: ['/games/crossy-road/assets/car.png']
+      },
+      parameters: {
+        speed: 150,
+        spawnRate: 2000,
+        moveDistance: 50
+      }
+    }
+  }
 ];
 
 

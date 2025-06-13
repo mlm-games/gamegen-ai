@@ -16,21 +16,25 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    console.log('Generating image with prompt:', prompt);
+
     // Use SDXL for better game asset generation
     const model = "stability-ai/sdxl:39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
     
     // Customize prompt based on asset type
     let enhancedPrompt = prompt;
     if (type === 'character') {
-      enhancedPrompt = `${prompt}, centered, game sprite, clean design, vibrant colors, simple shapes`;
+      enhancedPrompt = `${prompt}, centered, game sprite, clean design, vibrant colors, simple shapes, white background`;
     } else if (type === 'background') {
       enhancedPrompt = `${prompt}, 2D game background, parallax layer, vibrant colors, detailed`;
+    } else if (type === 'obstacle') {
+      enhancedPrompt = `${prompt}, game obstacle, simple design, vibrant colors`;
     }
 
     const output = await replicate.run(model, {
       input: {
         prompt: enhancedPrompt,
-        negative_prompt: "blurry, bad quality, text, watermark, signature",
+        negative_prompt: "blurry, bad quality, text, watermark, signature, 3d render, realistic",
         width: type === 'background' ? 1024 : 512,
         height: type === 'background' ? 768 : 512,
         num_outputs: 1,
@@ -40,6 +44,7 @@ export async function POST(request: NextRequest) {
     });
 
     const imageUrl = Array.isArray(output) ? output[0] : output;
+    console.log('Generated image URL:', imageUrl);
 
     return NextResponse.json({ imageUrl });
   } catch (error) {
