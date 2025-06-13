@@ -7,29 +7,51 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 
   preload() {
-    // Enable CORS for all loads
-    this.load.crossOrigin = 'anonymous';
-    
     console.log('Game config:', this.gameConfig);
     
     // Load custom assets if provided
     if (this.gameConfig.assets && this.gameConfig.assets.player) {
-      console.log('Loading custom player:', this.gameConfig.assets.player);
-      this.load.image('bird', this.gameConfig.assets.player);
-    }
-    if (this.gameConfig.assets && this.gameConfig.assets.background) {
-      console.log('Loading custom background:', this.gameConfig.assets.background);
-      this.load.image('background', this.gameConfig.assets.background);
-    }
-    if (this.gameConfig.assets && this.gameConfig.assets.obstacles && this.gameConfig.assets.obstacles[0]) {
-      console.log('Loading custom pipe:', this.gameConfig.assets.obstacles[0]);
-      this.load.image('pipe', this.gameConfig.assets.obstacles[0]);
+      console.log('Loading custom player:', this.gameConfig.assets.player.substring(0, 50) + '...');
+      if (this.gameConfig.assets.player.startsWith('data:')) {
+        // Base64 image
+        this.textures.addBase64('bird', this.gameConfig.assets.player);
+      } else {
+        // URL
+        this.load.image('bird', this.gameConfig.assets.player);
+      }
     }
     
-    // Always load default assets as fallback
+    if (this.gameConfig.assets && this.gameConfig.assets.background) {
+      console.log('Loading custom background:', this.gameConfig.assets.background.substring(0, 50) + '...');
+      if (this.gameConfig.assets.background.startsWith('data:')) {
+        // Base64 image
+        this.textures.addBase64('background', this.gameConfig.assets.background);
+      } else {
+        // URL
+        this.load.image('background', this.gameConfig.assets.background);
+      }
+    }
+    
+    if (this.gameConfig.assets && this.gameConfig.assets.obstacles && Array.isArray(this.gameConfig.assets.obstacles) && this.gameConfig.assets.obstacles[0]) {
+      console.log('Loading custom pipe:', this.gameConfig.assets.obstacles[0].substring(0, 50) + '...');
+      if (this.gameConfig.assets.obstacles[0].startsWith('data:')) {
+        // Base64 image
+        this.textures.addBase64('pipe', this.gameConfig.assets.obstacles[0]);
+      } else {
+        // URL
+        this.load.image('pipe', this.gameConfig.assets.obstacles[0]);
+      }
+    }
+    
+    // Load default assets as fallback (these will be embedded in exported version)
     this.load.image('bird-default', '/games/flappy-bird/assets/bird.png');
     this.load.image('background-default', '/games/flappy-bird/assets/background.png');
     this.load.image('pipe-default', '/games/flappy-bird/assets/pipe.png');
+    
+    // Add load complete handler
+    this.load.on('complete', () => {
+      console.log('All assets loaded');
+    });
     
     // Add error handling
     this.load.on('loaderror', (file) => {
@@ -38,6 +60,9 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 
   create() {
+    // Set background color first
+    this.cameras.main.setBackgroundColor('#87CEEB');
+    
     // Check which assets loaded successfully
     const birdAsset = this.textures.exists('bird') ? 'bird' : 'bird-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
@@ -46,7 +71,8 @@ class FlappyBirdGame extends Phaser.Scene {
     console.log('Using assets:', { bird: birdAsset, background: bgAsset, pipe: pipeAsset });
     
     // Background
-    this.add.image(400, 300, bgAsset);
+    const bg = this.add.image(400, 300, bgAsset);
+    bg.setDisplaySize(800, 600);
     
     // Bird
     this.bird = this.physics.add.sprite(100, 300, birdAsset);
@@ -75,13 +101,17 @@ class FlappyBirdGame extends Phaser.Scene {
     
     // Controls
     this.input.on('pointerdown', () => this.jump());
-    this.input.keyboard.on('keydown-SPACE', () => this.jump());
+    if (this.input.keyboard) {
+      this.input.keyboard.on('keydown-SPACE', () => this.jump());
+    }
     
     // Collisions
     this.physics.add.collider(this.bird, this.pipes, () => this.gameOver());
   }
 
   update() {
+    if (!this.bird) return;
+    
     // Check if bird is out of bounds
     if (this.bird.y < 0 || this.bird.y > 600) {
       this.gameOver();
@@ -98,7 +128,9 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 
   jump() {
-    this.bird.setVelocityY(this.gameConfig.parameters?.jumpVelocity || -350);
+    if (this.bird) {
+      this.bird.setVelocityY(this.gameConfig.parameters?.jumpVelocity || -350);
+    }
   }
 
   spawnPipe(pipeAsset) {
@@ -130,11 +162,23 @@ class GameMain {
   constructor(config) {
     console.log('Initializing game with config:', config);
     
+    // Ensure config has proper structure
+    if (!config) {
+      config = {};
+    }
+    if (!config.assets) {
+      config.assets = {};
+    }
+    if (!config.parameters) {
+      config.parameters = {};
+    }
+    
     const phaserConfig = {
       type: Phaser.AUTO,
       width: 800,
       height: 600,
       parent: 'game-container',
+      backgroundColor: '#87CEEB',
       physics: {
         default: 'arcade',
         arcade: {

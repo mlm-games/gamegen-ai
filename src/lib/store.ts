@@ -22,9 +22,33 @@ export const useGameStore = create<GameStore>((set) => ({
     gameConfig: { ...template.defaultConfig }
   }),
   
-  updateGameConfig: (config) => set((state) => ({
-    gameConfig: state.gameConfig ? { ...state.gameConfig, ...config } : null
-  })),
+  updateGameConfig: (config) => set((state) => {
+    const newConfig = state.gameConfig ? { ...state.gameConfig } : null;
+    
+    if (newConfig && config) {
+      // Deep merge for nested objects
+      if (config.assets) {
+        newConfig.assets = {
+          ...newConfig.assets,
+          ...config.assets
+        };
+      }
+      if (config.parameters) {
+        newConfig.parameters = {
+          ...newConfig.parameters,
+          ...config.parameters
+        };
+      }
+      // Copy other properties
+      Object.keys(config).forEach(key => {
+        if (key !== 'assets' && key !== 'parameters') {
+          (newConfig as any)[key] = (config as any)[key];
+        }
+      });
+    }
+    
+    return { gameConfig: newConfig };
+  }),
   
   setGeneratedAsset: (key, url) => set((state) => ({
     generatedAssets: { ...state.generatedAssets, [key]: url }
