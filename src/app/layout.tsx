@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Fredoka } from "next/font/google";
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 
-const inter = Inter({ subsets: ["latin"] });
+const fredoka = Fredoka({ subsets: ["latin"], display: "swap", variable: '--font-sans' });
 
 export const metadata: Metadata = {
   title: "GameGen AI - No-Code Game Maker",
@@ -17,7 +17,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={fredoka.className}>
         {children}
         <Toaster 
           position="top-right"

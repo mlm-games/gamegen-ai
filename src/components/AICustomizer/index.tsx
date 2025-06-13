@@ -29,11 +29,26 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
     style: 'cartoon'
   });
 
+  const [localTheme, setLocalTheme] = useState(gameConfig?.theme || '');
+
+  const updateGlobalTheme = () => {
+    // Only update if the local value is different from the global one
+    if (localTheme !== gameConfig?.theme) {
+      console.log(`Updating global theme to: "${localTheme}"`);
+      updateGameConfig({ name: localTheme, theme: localTheme });
+    }
+  };
+
+
+
+
   const handleGenerateAsset = async (assetType: 'character' | 'background' | 'obstacle' | 'items') => {
     let prompt = '';
     let apiType = '';
     let toastId = assetType;
     let numToGenerate = 1;
+
+    updateGlobalTheme();
 
     switch (assetType) {
         case 'character':
@@ -121,15 +136,20 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
                 <label className="block text-sm font-medium text-gray-700 mb-1">Game Theme / Title</label>
                 <input
                   type="text"
-                  value={prompts.theme}
-                  onChange={(e) => {
-                      setPrompts({ ...prompts, theme: e.target.value });
-                      updateGameConfig({ name: e.target.value, theme: e.target.value });
-                  }}
+                  value={localTheme}
+                  onChange={(e) => setLocalTheme(e.target.value)}
+                  onBlur={updateGlobalTheme} // 3. Update global state when input loses focus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      updateGlobalTheme();
+                      (e.target as HTMLInputElement).blur(); // Optional: lose focus on enter
+                    }
+                  }} // 4. Update global state on Enter key
                   placeholder="e.g., Underwater Quest"
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg"
                 />
             </div>
+
             <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Art Style</label>
                 <select
