@@ -27,10 +27,5 @@
         window.GAME_CONFIG = JSON.parse(localStorage.getItem('gameConfig') || '{}');
     </script>
     <script src="game.js"></script>
-    <script>
-        window.addEventListener('load', () => {
-            new GameMain(window.GAME_CONFIG);
-        });
-    </script>
 </body>
 </html>

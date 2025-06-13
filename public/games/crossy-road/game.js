@@ -9,7 +9,7 @@ class CrossyRoadGame extends Phaser.Scene {
   }
 
   preload() {
-    // Load custom assets
+   
     if (this.gameConfig.assets.player) {
       this.load.image('player', this.gameConfig.assets.player);
     }
@@ -20,7 +20,7 @@ class CrossyRoadGame extends Phaser.Scene {
       this.load.image('vehicle', this.gameConfig.assets.obstacles[0]);
     }
     
-    // Load default assets
+   
     this.load.image('player-default', '/games/crossy-road/assets/chicken.png');
     this.load.image('background-default', '/games/crossy-road/assets/background.png');
     this.load.image('vehicle-default', '/games/crossy-road/assets/car.png');
@@ -29,15 +29,15 @@ class CrossyRoadGame extends Phaser.Scene {
   }
 
   create() {
-    // Use custom or default assets
+   
     const playerAsset = this.textures.exists('player') ? 'player' : 'player-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const vehicleAsset = this.textures.exists('vehicle') ? 'vehicle' : 'vehicle-default';
     
-    // Background
+   
     this.add.image(400, 300, bgAsset);
     
-    // Create lanes
+   
     for (let i = 0; i < 10; i++) {
       const y = 550 - i * 50;
       const isRoad = i % 2 === 1;
@@ -51,12 +51,12 @@ class CrossyRoadGame extends Phaser.Scene {
       }
     }
     
-    // Player
+   
     this.player = this.physics.add.sprite(400, 550, playerAsset);
     this.player.setScale(0.8);
     this.player.setDepth(10);
     
-    // Spawn vehicles
+   
     this.time.addEvent({
       delay: this.gameConfig.parameters.spawnRate || 2000,
       callback: () => this.spawnVehicle(vehicleAsset),
@@ -64,7 +64,7 @@ class CrossyRoadGame extends Phaser.Scene {
       loop: true
     });
     
-    // Score
+   
     this.scoreText = this.add.text(16, 16, 'Score: 0', { 
       fontSize: '32px', 
       fill: '#fff',
@@ -72,16 +72,16 @@ class CrossyRoadGame extends Phaser.Scene {
       strokeThickness: 4
     });
     
-    // Controls
+   
     this.cursors = this.input.keyboard.createCursorKeys();
     this.input.on('pointerdown', (pointer) => this.handleTouch(pointer));
     
-    // Collisions
+   
     this.physics.add.overlap(this.player, this.vehicles, () => this.gameOver());
   }
 
   update() {
-    // Keyboard controls
+   
     if (this.canMove) {
       if (Phaser.Input.Keyboard.JustDown(this.cursors.up)) {
         this.movePlayer(0, -50);
@@ -94,7 +94,7 @@ class CrossyRoadGame extends Phaser.Scene {
       }
     }
     
-    // Update vehicles
+   
     this.vehicles.children.entries.forEach(vehicle => {
       if (vehicle.x < -100 || vehicle.x > 900) {
         vehicle.destroy();
@@ -121,13 +121,13 @@ class CrossyRoadGame extends Phaser.Scene {
     const newX = this.player.x + dx;
     const newY = this.player.y + dy;
     
-    // Check bounds
+   
     if (newX < 50 || newX > 750 || newY < 50 || newY > 550) {
       this.canMove = true;
       return;
     }
     
-    // Update score if moving forward
+   
     if (dy < 0) {
       this.score++;
       this.scoreText.setText('Score: ' + this.score);
@@ -180,23 +180,12 @@ class CrossyRoadGame extends Phaser.Scene {
   }
 }
 
-class GameMain {
-  constructor(config) {
-    const phaserConfig = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      parent: 'game-container',
-      physics: {
-        default: 'arcade',
-        arcade: {
-          gravity: { y: 0 },
-          debug: false
-        }
-      },
-      scene: new CrossyRoadGame(config)
-    };
-    
-    this.game = new Phaser.Game(phaserConfig);
-  }
-}
+const phaserGameConfig = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: { default: 'arcade' },
+    scene: [CrossyRoadGame]
+};
+new Phaser.Game(phaserGameConfig);

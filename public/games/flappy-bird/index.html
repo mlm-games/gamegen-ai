@@ -24,15 +24,9 @@
 <body>
     <div id="game-container"></div>
     <script>
-        // Read config from localStorage or use default
+       
         window.GAME_CONFIG = JSON.parse(localStorage.getItem('gameConfig') || '{}');
     </script>
     <script src="game.js"></script>
-    <script>
-        // Initialize game when page loads
-        window.addEventListener('load', () => {
-            new GameMain(window.GAME_CONFIG);
-        });
-    </script>
 </body>
 </html>

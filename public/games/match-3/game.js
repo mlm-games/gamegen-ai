@@ -11,7 +11,7 @@ class Match3Game extends Phaser.Scene {
   }
 
   preload() {
-    // Load custom assets
+   
     if (this.gameConfig.assets.items && this.gameConfig.assets.items.length > 0) {
       this.gameConfig.assets.items.forEach((item, index) => {
         this.load.image('gem' + index, item);
@@ -21,7 +21,7 @@ class Match3Game extends Phaser.Scene {
       this.load.image('background', this.gameConfig.assets.background);
     }
     
-    // Load default gems
+   
     const colors = ['red', 'blue', 'green', 'yellow', 'purple'];
     colors.forEach((color, index) => {
       this.load.image('gem-default' + index, `/games/match-3/assets/gem-${color}.png`);
@@ -30,11 +30,11 @@ class Match3Game extends Phaser.Scene {
   }
 
   create() {
-    // Background
+   
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     this.add.image(400, 300, bgAsset);
     
-    // Create grid
+   
     const startX = 400 - (this.gridSize * this.tileSize) / 2 + this.tileSize / 2;
     const startY = 300 - (this.gridSize * this.tileSize) / 2 + this.tileSize / 2;
     
@@ -62,7 +62,7 @@ class Match3Game extends Phaser.Scene {
       }
     }
     
-    // Score
+   
     this.scoreText = this.add.text(16, 16, 'Score: 0', { 
       fontSize: '32px', 
       fill: '#fff',
@@ -70,7 +70,7 @@ class Match3Game extends Phaser.Scene {
       strokeThickness: 4
     });
     
-    // Check for initial matches
+   
     this.time.delayedCall(500, () => this.checkMatches());
   }
 
@@ -81,7 +81,7 @@ class Match3Game extends Phaser.Scene {
       this.selectedTile = tile;
       tile.setTint(0x00ff00);
     } else {
-      // Check if adjacent
+     
       const dx = Math.abs(tile.gridX - this.selectedTile.gridX);
       const dy = Math.abs(tile.gridY - this.selectedTile.gridY);
       
@@ -97,7 +97,7 @@ class Match3Game extends Phaser.Scene {
   swapTiles(tile1, tile2) {
     this.canMove = false;
     
-    // Swap positions
+   
     const tempX = tile1.x;
     const tempY = tile1.y;
     
@@ -116,11 +116,11 @@ class Match3Game extends Phaser.Scene {
       duration: 300,
       ease: 'Power2',
       onComplete: () => {
-        // Swap in grid
+       
         this.grid[tile1.gridY][tile1.gridX] = tile2;
         this.grid[tile2.gridY][tile2.gridX] = tile1;
         
-        // Swap grid positions
+       
         const tempGridX = tile1.gridX;
         const tempGridY = tile1.gridY;
         tile1.gridX = tile2.gridX;
@@ -128,10 +128,10 @@ class Match3Game extends Phaser.Scene {
         tile2.gridX = tempGridX;
         tile2.gridY = tempGridY;
         
-        // Check for matches
+       
         const matches = this.checkMatches();
         if (matches.length === 0) {
-          // Swap back if no matches
+         
           this.swapTiles(tile1, tile2);
         } else {
           this.canMove = true;
@@ -143,7 +143,7 @@ class Match3Game extends Phaser.Scene {
   checkMatches() {
     const matches = [];
     
-    // Check horizontal matches
+   
     for (let row = 0; row < this.gridSize; row++) {
       for (let col = 0; col < this.gridSize - 2; col++) {
         const gem1 = this.grid[row][col];
@@ -158,7 +158,7 @@ class Match3Game extends Phaser.Scene {
       }
     }
     
-    // Check vertical matches
+   
     for (let col = 0; col < this.gridSize; col++) {
       for (let row = 0; row < this.gridSize - 2; row++) {
         const gem1 = this.grid[row][col];
@@ -200,22 +200,18 @@ class Match3Game extends Phaser.Scene {
   }
 
   dropGems() {
-    // Implementation for dropping gems would go here
-    // For simplicity, we'll just refill the board
+   
+   
     this.canMove = true;
   }
 }
 
-class GameMain {
-  constructor(config) {
-    const phaserConfig = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      parent: 'game-container',
-      scene: new Match3Game(config)
-    };
-    
-    this.game = new Phaser.Game(phaserConfig);
-  }
-}
+const phaserGameConfig = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: { default: 'arcade' },
+    scene: [Match3Game]
+};
+new Phaser.Game(phaserGameConfig);

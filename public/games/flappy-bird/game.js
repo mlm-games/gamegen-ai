@@ -160,56 +160,12 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 }
 
-// Main game class that initializes Phaser
-class GameMain {
-  constructor(config) {
-    console.log('GameMain constructor received:', config);
-    console.log('Config type:', typeof config);
-    console.log('Config stringified:', JSON.stringify(config));
-    
-    // Ensure config has proper structure
-    if (!config || typeof config !== 'object') {
-      console.warn('Invalid config, using defaults');
-      config = {};
-    }
-    
-    if (!config.assets || typeof config.assets !== 'object') {
-      config.assets = {};
-    }
-    
-    if (!config.parameters || typeof config.parameters !== 'object') {
-      config.parameters = {};
-    }
-    
-    // Fix obstacles if it's not an array
-    if (!Array.isArray(config.assets.obstacles)) {
-      console.log('Obstacles is not an array:', config.assets.obstacles);
-      if (config.assets.obstacles && typeof config.assets.obstacles === 'object') {
-        // If it's an object, try to convert it to array
-        config.assets.obstacles = Object.values(config.assets.obstacles);
-      } else {
-        config.assets.obstacles = [];
-      }
-    }
-    
-    console.log('Final config after fixes:', config);
-    
-    const phaserConfig = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      parent: 'game-container',
-      backgroundColor: '#87CEEB',
-      physics: {
-        default: 'arcade',
-        arcade: {
-          gravity: { y: 0 },
-          debug: false
-        }
-      },
-      scene: new FlappyBirdGame(config)
-    };
-    
-    this.game = new Phaser.Game(phaserConfig);
-  }
-}
+const phaserGameConfig = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: { default: 'arcade' },
+    scene: [FlappyBirdGame] // NOTE: The class name here must match your scene class
+};
+new Phaser.Game(phaserGameConfig);

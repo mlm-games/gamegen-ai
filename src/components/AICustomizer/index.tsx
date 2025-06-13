@@ -33,74 +33,43 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
     }
 
     setIsGenerating(true);
-    setGeneratedImages({}); // Reset images
-    
-    try {
-      // Store all updates to apply at once
-      const updates: any = {
-        theme: prompts.theme,
-        assets: { ...gameConfig?.assets }
-      };
+   
+    updateGameConfig({ theme: prompts.theme });
 
-      // Generate character
+    try {
+     
       if (prompts.character) {
         toast.loading('Generating character...', { id: 'character' });
-        const response = await fetch('/api/generate-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: `${prompts.character}, ${prompts.style} style, game asset`,
-            type: 'character'
-          })
-        });
-        
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to generate character');
-        }
-        
+        const response = await fetch('/api/generate-image', { /* ... */ });
         const data = await response.json();
-        console.log('Character response:', data);
         
-        if (data.imageUrl) {
+       
+        if (data.imageUrl && typeof data.imageUrl === 'string') {
           toast.success('Character generated!', { id: 'character' });
-          setGeneratedImages(prev => ({ ...prev, player: data.imageUrl }));
-          setGeneratedAsset('player', data.imageUrl);
-          updates.assets.player = data.imageUrl;
+         
+          updateGameConfig({ assets: { player: data.imageUrl } });
+        } else {
+          throw new Error('API returned invalid data for character.');
         }
       }
 
-      // Generate background
+     
       if (prompts.environment) {
         toast.loading('Generating background...', { id: 'background' });
-        const response = await fetch('/api/generate-image', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            prompt: `${prompts.environment}, ${prompts.style} style, game background`,
-            type: 'background'
-          })
-        });
-        
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to generate background');
-        }
-        
+        const response = await fetch('/api/generate-image', { /* ... */ });
         const data = await response.json();
-        console.log('Background response:', data);
-        
-        if (data.imageUrl) {
+
+        if (data.imageUrl && typeof data.imageUrl === 'string') {
           toast.success('Background generated!', { id: 'background' });
-          setGeneratedImages(prev => ({ ...prev, background: data.imageUrl }));
-          setGeneratedAsset('background', data.imageUrl);
-          updates.assets.background = data.imageUrl;
+          updateGameConfig({ assets: { background: data.imageUrl } });
+        } else {
+          throw new Error('API returned invalid data for background.');
         }
       }
 
-      // Generate obstacles for flappy bird
+     
       if (selectedTemplate?.id === 'flappy-bird') {
-        toast.loading('Generating obstacles...', { id: 'obstacle' });
+        toast.loading('Generating obstacle...', { id: 'obstacle' });
         const response = await fetch('/api/generate-image', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -110,31 +79,24 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
           })
         });
         
-        if (!response.ok) {
-          const error = await response.json();
-          throw new Error(error.error || 'Failed to generate obstacle');
-        }
-        
         const data = await response.json();
-        console.log('Obstacle response:', data);
-        
-        if (data.imageUrl) {
+        console.log('Final Obstacle Response:', data);
+
+        if (data.imageUrl && typeof data.imageUrl === 'string') {
           toast.success('Obstacle generated!', { id: 'obstacle' });
-          setGeneratedImages(prev => ({ ...prev, obstacle: data.imageUrl }));
-          setGeneratedAsset('obstacle', data.imageUrl);
-          // Make sure obstacles is an array
-          updates.assets.obstacles = [data.imageUrl];
+         
+          updateGameConfig({ assets: { obstacles: [data.imageUrl] } });
+        } else {
+          console.error("Obstacle generation failed or returned invalid data.", data);
+          throw new Error('API returned invalid data for obstacle.');
         }
       }
-
-      // Apply all updates at once
-      console.log('Applying config updates:', updates);
-      updateGameConfig(updates);
       
-      toast.success('All assets generated successfully!');
+      toast.success('Asset generation complete!');
+
     } catch (error) {
       console.error('Generation error:', error);
-      toast.error('Failed to generate assets: ' + (error as Error).message);
+      toast.error(`Asset generation failed: ${(error as Error).message}`);
     } finally {
       setIsGenerating(false);
     }

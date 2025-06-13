@@ -7,7 +7,7 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 
   preload() {
-    // Load custom assets
+   
     if (this.gameConfig.assets.player) {
       this.load.image('player', this.gameConfig.assets.player);
     }
@@ -18,7 +18,7 @@ class EndlessRunnerGame extends Phaser.Scene {
       this.load.image('obstacle', this.gameConfig.assets.obstacles[0]);
     }
     
-    // Load default assets
+   
     this.load.image('player-default', '/games/endless-runner/assets/player.png');
     this.load.image('background-default', '/games/endless-runner/assets/background.png');
     this.load.image('obstacle-default', '/games/endless-runner/assets/obstacle.png');
@@ -26,28 +26,28 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 
   create() {
-    // Use custom or default assets
+   
     const playerAsset = this.textures.exists('player') ? 'player' : 'player-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const obstacleAsset = this.textures.exists('obstacle') ? 'obstacle' : 'obstacle-default';
     
-    // Background
+   
     this.bg = this.add.tileSprite(400, 300, 800, 600, bgAsset);
     
-    // Ground
+   
     this.ground = this.physics.add.staticGroup();
     this.ground.create(400, 568, 'ground-default').setScale(2, 1).refreshBody();
     
-    // Player
+   
     this.player = this.physics.add.sprite(100, 450, playerAsset);
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
     this.player.setGravityY(this.gameConfig.parameters.gravity || 800);
     
-    // Obstacles
+   
     this.obstacles = this.physics.add.group();
     
-    // Spawn obstacles
+   
     this.time.addEvent({
       delay: this.gameConfig.parameters.spawnRate || 2000,
       callback: () => this.spawnObstacle(obstacleAsset),
@@ -55,7 +55,7 @@ class EndlessRunnerGame extends Phaser.Scene {
       loop: true
     });
     
-    // Score
+   
     this.scoreText = this.add.text(16, 16, 'Score: 0', { 
       fontSize: '32px', 
       fill: '#fff',
@@ -63,20 +63,20 @@ class EndlessRunnerGame extends Phaser.Scene {
       strokeThickness: 4
     });
     
-    // Controls
+   
     this.input.on('pointerdown', () => this.jump());
     this.input.keyboard.on('keydown-SPACE', () => this.jump());
     
-    // Collisions
+   
     this.physics.add.collider(this.player, this.ground);
     this.physics.add.collider(this.player, this.obstacles, () => this.gameOver());
   }
 
   update() {
-    // Scroll background
+   
     this.bg.tilePositionX += this.gameSpeed * 0.02;
     
-    // Update obstacles
+   
     this.obstacles.children.entries.forEach(obstacle => {
       obstacle.x -= this.gameSpeed * 0.016;
       
@@ -105,23 +105,12 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 }
 
-class GameMain {
-  constructor(config) {
-    const phaserConfig = {
-      type: Phaser.AUTO,
-      width: 800,
-      height: 600,
-      parent: 'game-container',
-      physics: {
-        default: 'arcade',
-        arcade: {
-          gravity: { y: 0 },
-          debug: false
-        }
-      },
-      scene: new EndlessRunnerGame(config)
-    };
-    
-    this.game = new Phaser.Game(phaserConfig);
-  }
-}
+const phaserGameConfig = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: { default: 'arcade' },
+    scene: [EndlessRunnerGame]
+};
+new Phaser.Game(phaserGameConfig);
