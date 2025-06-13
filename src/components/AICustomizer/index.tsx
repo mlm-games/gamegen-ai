@@ -7,6 +7,8 @@ import GameCanvas from '@/components/GameCanvas';
 import toast from 'react-hot-toast';
 
 
+
+
 interface AICustomizerProps {
   onNext: () => void;
 }
@@ -21,80 +23,121 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
     style: 'cartoon'
   });
 
-const handleGenerateAssets = async () => {
-  if (!prompts.theme) {
-    toast.error('Please enter a theme for your game');
-    return;
-  }
+  const [generatedImages, setGeneratedImages] = useState<{
+  player?: string;
+  background?: string;
+  obstacle?: string;
+  }>({});
 
-  setIsGenerating(true);
-  try {
-    // Generate character
-    if (prompts.character) {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `${prompts.character}, ${prompts.style} style, game asset, transparent background`,
-          type: 'character'
-        })
-      });
-      const data = await response.json();
-      if (data.imageUrl) {
-        setGeneratedAsset('player', data.imageUrl);
-        updateGameConfig({
-          assets: { ...gameConfig?.assets, player: data.imageUrl }
-        });
-      }
+  const handleGenerateAssets = async () => {
+    if (!prompts.theme) {
+        toast.error('Please enter a theme for your game');
+        return;
     }
 
-    // Generate background
-    if (prompts.environment) {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `${prompts.environment}, ${prompts.style} style, game background`,
-          type: 'background'
-        })
-      });
-      const data = await response.json();
-      if (data.imageUrl) {
-        setGeneratedAsset('background', data.imageUrl);
-        updateGameConfig({
-          assets: { ...gameConfig?.assets, background: data.imageUrl }
+    setIsGenerating(true);
+    setGeneratedImages({}); // Reset images
+    
+    try {
+        // Generate character
+        if (prompts.character) {
+        toast.loading('Generating character...', { id: 'character' });
+        const response = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            prompt: `${prompts.character}, ${prompts.style} style, game asset`,
+            type: 'character'
+            })
         });
-      }
-    }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate character');
+        }
+        
+        const data = await response.json();
+        console.log('Character response:', data);
+        
+        if (data.imageUrl) {
+            toast.success('Character generated!', { id: 'character' });
+            setGeneratedImages(prev => ({ ...prev, player: data.imageUrl }));
+            setGeneratedAsset('player', data.imageUrl);
+            updateGameConfig({
+            assets: { ...gameConfig?.assets, player: data.imageUrl }
+            });
+        }
+        }
 
-    // Generate obstacles based on game type
-    if (selectedTemplate?.id === 'flappy-bird' && prompts.environment) {
-      const response = await fetch('/api/generate-image', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt: `pipe obstacle for ${prompts.theme} theme, ${prompts.style} style, vertical tube`,
-          type: 'obstacle'
-        })
-      });
-      const data = await response.json();
-      if (data.imageUrl) {
-        setGeneratedAsset('obstacle', data.imageUrl);
-        updateGameConfig({
-          assets: { ...gameConfig?.assets, obstacles: [data.imageUrl] }
+        // Generate background
+        if (prompts.environment) {
+        toast.loading('Generating background...', { id: 'background' });
+        const response = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            prompt: `${prompts.environment}, ${prompts.style} style, game background`,
+            type: 'background'
+            })
         });
-      }
-    }
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate background');
+        }
+        
+        const data = await response.json();
+        console.log('Background response:', data);
+        
+        if (data.imageUrl) {
+            toast.success('Background generated!', { id: 'background' });
+            setGeneratedImages(prev => ({ ...prev, background: data.imageUrl }));
+            setGeneratedAsset('background', data.imageUrl);
+            updateGameConfig({
+            assets: { ...gameConfig?.assets, background: data.imageUrl }
+            });
+        }
+        }
 
-      updateGameConfig({ theme: prompts.theme });
-      toast.success('Assets generated successfully!');
+        // Generate obstacles for flappy bird
+        if (selectedTemplate?.id === 'flappy-bird') {
+        toast.loading('Generating obstacles...', { id: 'obstacle' });
+        const response = await fetch('/api/generate-image', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+            prompt: `vertical pipe obstacle, ${prompts.style} style, game asset`,
+            type: 'obstacle'
+            })
+        });
+        
+        if (!response.ok) {
+            const error = await response.json();
+            throw new Error(error.error || 'Failed to generate obstacle');
+        }
+        
+        const data = await response.json();
+        console.log('Obstacle response:', data);
+        
+        if (data.imageUrl) {
+            toast.success('Obstacle generated!', { id: 'obstacle' });
+            setGeneratedImages(prev => ({ ...prev, obstacle: data.imageUrl }));
+            setGeneratedAsset('obstacle', data.imageUrl);
+            updateGameConfig({
+            assets: { ...gameConfig?.assets, obstacles: [data.imageUrl] }
+            });
+        }
+        }
+
+        updateGameConfig({ theme: prompts.theme });
+        toast.success('All assets generated successfully!');
     } catch (error) {
-      toast.error('Failed to generate assets');
-      console.error(error);
+        console.error('Generation error:', error);
+        toast.error('Failed to generate assets: ' + (error as Error).message);
     } finally {
-      setIsGenerating(false);
+        setIsGenerating(false);
     }
-  };
+    };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
