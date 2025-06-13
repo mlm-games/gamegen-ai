@@ -55,11 +55,22 @@ export async function POST(request: NextRequest) {
       }
     });
 
-    console.log('Replicate output:', output);
+    console.log('Replicate raw output:', output);
 
-    const imageUrl = Array.isArray(output) ? output[0] : output;
+    // The output is an array of URLs
+    let imageUrl: string | undefined;
+    
+    if (Array.isArray(output) && output.length > 0) {
+      imageUrl = output[0];
+    } else if (typeof output === 'string') {
+      imageUrl = output;
+    } else if (output && typeof output === 'object' && 'output' in output && Array.isArray(output.output)) {
+      // Sometimes Replicate returns the URL in an output property
+      imageUrl = output.output[0];
+    }
     
     if (!imageUrl) {
+      console.error('No image URL found in output:', output);
       throw new Error('No image URL returned from Replicate');
     }
 
