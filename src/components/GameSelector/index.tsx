@@ -30,8 +30,32 @@ const gameTemplates: GameTemplate[] = [
       }
     }
   },
-  // Add other game templates here
+  {
+    id: 'endless-runner',
+    name: 'Speed Runner',
+    thumbnail: '/thumbnails/endless-runner.png',
+    description: 'Run and jump through an endless world',
+    defaultConfig: {
+      id: 'endless-runner',
+      name: 'Speed Runner',
+      theme: 'classic',
+      difficulty: 'medium',
+      assets: {
+        player: '/game-assets/endless-runner/player.png',
+        background: '/game-assets/endless-runner/background.png',
+        obstacles: ['/game-assets/endless-runner/obstacle.png']
+      },
+      parameters: {
+        speed: 200,
+        jumpVelocity: -330,
+        spawnRate: 2000,
+        gravity: 800
+      }
+    }
+  },
+  // Add other games...
 ];
+
 
 interface GameSelectorProps {
   onNext: () => void;

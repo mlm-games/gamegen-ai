@@ -23,11 +23,31 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
         
         // Dynamic import based on template
         switch (gameTemplate) {
-          case 'flappy-bird':
+          case 'flappy-bird': {
             const flappyModule = await import('@/games/templates/flappy-bird/game');
             GameScene = flappyModule.default;
             break;
-          // Add other game cases here
+          }
+          case 'endless-runner': {
+            const runnerModule = await import('@/games/templates/endless-runner/game');
+            GameScene = runnerModule.default;
+            break;
+          }
+          case 'whack-a-mole': {
+            const whackModule = await import('@/games/templates/whack-a-mole/game');
+            GameScene = whackModule.default;
+            break;
+          }
+          case 'match-3': {
+            const matchModule = await import('@/games/templates/match-3/game');
+            GameScene = matchModule.default;
+            break;
+          }
+          case 'crossy-road': {
+            const crossyModule = await import('@/games/templates/crossy-road/game');
+            GameScene = crossyModule.default;
+            break;
+          }
           default:
             console.error(`Unknown game template: ${gameTemplate}`);
             return;
