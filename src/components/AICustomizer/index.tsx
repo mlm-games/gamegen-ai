@@ -1,11 +1,11 @@
 'use client';
 
-import { useState, lazy, Suspense } from 'react';
+import { useState } from 'react';
 import { useGameStore } from '@/lib/store';
 import { Wand2, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
+import GameCanvas from '@/components/GameCanvas';
 import toast from 'react-hot-toast';
 
-const GameCanvas = lazy(() => import('@/components/GameCanvas'));
 
 interface AICustomizerProps {
   onNext: () => void;
@@ -194,12 +194,10 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
         </div>
         
         {selectedTemplate && gameConfig && (
-        <Suspense fallback={<div>Loading game...</div>}>
-            <GameCanvas
+          <GameCanvas
             gameTemplate={selectedTemplate.id}
             config={gameConfig}
-            />
-        </Suspense>
+          />
         )}
       </div>
     </div>

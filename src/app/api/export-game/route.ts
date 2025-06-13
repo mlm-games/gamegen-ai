@@ -8,38 +8,50 @@ export async function POST(request: NextRequest) {
     const { template, config } = await request.json();
 
     if (!template || !config) {
-      return NextResponse.json({ error: 'Template and config are required' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Template and config are required' },
+        { status: 400 }
+      );
     }
 
     const zip = new JSZip();
-    const gameTemplatePath = path.join(process.cwd(), 'public', 'game-templates', template);
+    const gamePath = path.join(process.cwd(), 'public', 'games', template);
 
-    // 1. Read the pre-compiled game.js
-    const gameCode = await fs.readFile(path.join(gameTemplatePath, 'game.js'), 'utf-8');
-    zip.file('game.js', gameCode);
+    // Read the game files
+    const gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
+    const indexHtml = await fs.readFile(path.join(gamePath, 'index.html'), 'utf-8');
 
-    // 2. Read the template index.html
-    const htmlTemplate = await fs.readFile(path.join(gameTemplatePath, 'index.html'), 'utf-8');
-
-    // 3. Inject the final config directly into the HTML
-    // This replaces the localStorage part for the exported version
-    const finalHtml = htmlTemplate.replace(
-      "window.GAME_CONFIG = JSON.parse(localStorage.getItem('gameConfig'));",
+    // Modify the HTML to embed the config directly
+    const modifiedHtml = indexHtml.replace(
+      "window.GAME_CONFIG = JSON.parse(localStorage.getItem('gameConfig') || '{}');",
       `window.GAME_CONFIG = ${JSON.stringify(config, null, 2)};`
     );
-    zip.file('index.html', finalHtml);
-    
-    // ... logic to fetch and add assets to the zip ...
 
+    // Add files to zip
+    zip.file('index.html', modifiedHtml);
+    zip.file('game.js', gameJs);
+    
+    // Add config for reference
+    zip.file('config.json', JSON.stringify(config, null, 2));
+
+    // Create assets folder
+    zip.folder('assets');
+    zip.file('assets/README.txt', 'Place your game assets in this folder');
+
+    // Generate the zip
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+
     return new NextResponse(zipBuffer, {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`,
-      },
+        'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`
+      }
     });
   } catch (error) {
     console.error('Export error:', error);
-    return NextResponse.json({ error: 'Failed to export game' }, { status: 500 });
+    return NextResponse.json(
+      { error: 'Failed to export game' },
+      { status: 500 }
+    );
   }
 }

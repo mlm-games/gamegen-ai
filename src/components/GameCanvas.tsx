@@ -1,28 +1,34 @@
+// src/components/GameCanvas.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
 import type { GameConfig } from '@/types/game';
 
-export default function GameCanvas({ gameTemplate, config }: GameConfig) {
-  const [key, setKey] = useState(0); // A key to force iframe re-render
+interface GameCanvasProps {
+  gameTemplate: string;
+  config: GameConfig;
+  onGameReady?: () => void;
+}
+
+export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCanvasProps) {
+  const [key, setKey] = useState(0);
+  const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    // When the config changes, we update the key, which creates a new iframe.
-    setKey(prev => prev + 1);
-  }, [config]);
-
-  // We need to pass the config to the iframe somehow.
-  // Using localStorage is a simple and effective way.
-  useEffect(() => {
+    // Store config in localStorage for the iframe to read
     localStorage.setItem('gameConfig', JSON.stringify(config));
+    // Force iframe reload when config changes
+    setKey(prev => prev + 1);
   }, [config]);
 
   return (
     <iframe
+      ref={iframeRef}
       key={key}
-      src={`/game-templates/${gameTemplate}/index.html`}
-      className="w-full aspect-[4/3] border-0 rounded-lg"
+      src={`/games/${gameTemplate}/index.html`}
+      className="w-full aspect-[4/3] border-0 rounded-lg bg-gray-100"
       title="Game Preview"
+      onLoad={() => onGameReady?.()}
     />
   );
 }
