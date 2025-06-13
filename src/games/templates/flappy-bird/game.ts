@@ -1,84 +1,89 @@
-import Phaser from 'phaser';
-import { GameConfig } from '@/types/game';
+import type { GameConfig } from '@/types/game';
 
 interface FlappyBirdData {
   config: GameConfig;
-  bird?: Phaser.Physics.Arcade.Sprite;
-  pipes?: Phaser.Physics.Arcade.Group;
+  bird?: any;
+  pipes?: any;
   score: number;
-  bgm?: Phaser.Sound.BaseSound;
+  bgm?: any;
 }
 
-export default class FlappyBirdGame extends Phaser.Scene {
+export default class FlappyBirdGame {
   private gameData: FlappyBirdData;
+  private scene: any;
 
   constructor(config: GameConfig) {
-    super({ key: 'FlappyBirdGame' });
+    // Store config for later use
     this.gameData = {
       config: config,
       score: 0
     };
   }
 
-  preload(): void {
+  init() {
+    // This will be called by Phaser
+    this.scene = this;
+  }
+
+  preload() {
     const { config } = this.gameData;
     
     // Load assets from config
     if (config.assets.player) {
-      this.load.image('bird', config.assets.player);
+      this.scene.load.image('bird', config.assets.player);
     }
     if (config.assets.background) {
-      this.load.image('background', config.assets.background);
+      this.scene.load.image('background', config.assets.background);
     }
     if (config.assets.obstacles?.[0]) {
-      this.load.image('pipe', config.assets.obstacles[0]);
+      this.scene.load.image('pipe', config.assets.obstacles[0]);
     }
     
     if (config.audio?.bgm) {
-      this.load.audio('bgm', config.audio.bgm);
+      this.scene.load.audio('bgm', config.audio.bgm);
     }
   }
 
-  create(): void {
+  create() {
     const { config } = this.gameData;
     
     // Background
     if (config.assets.background) {
-      this.add.image(400, 300, 'background');
+      this.scene.add.image(400, 300, 'background');
     }
     
     // Player
-    this.gameData.bird = this.physics.add.sprite(100, 300, 'bird');
+    this.gameData.bird = this.scene.physics.add.sprite(100, 300, 'bird');
     this.gameData.bird.setGravityY(config.parameters.gravity || 800);
     
     // Pipes group
-    this.gameData.pipes = this.physics.add.group();
+    this.gameData.pipes = this.scene.physics.add.group();
     
     // Timer for spawning pipes
-    this.time.addEvent({
+    this.scene.time.addEvent({
       delay: config.parameters.pipeSpawnDelay || 1500,
-      callback: this.spawnPipe,
+      callback: this.spawnPipe.bind(this),
       callbackScope: this,
       loop: true
     });
     
     // Controls
-    this.input.on('pointerdown', this.jump, this);
-    this.input.keyboard?.on('keydown-SPACE', this.jump, this);
+    this.scene.input.on('pointerdown', this.jump.bind(this));
+    this.scene.input.keyboard?.on('keydown-SPACE', this.jump.bind(this));
     
     // Mobile controls
-    if (this.sys.game.device.input.touch) {
-      this.input.addPointer(1);
+    if (this.scene.sys.game.device.input.touch) {
+      this.scene.input.addPointer(1);
     }
     
     // Play BGM
     if (config.audio?.bgm) {
-      this.gameData.bgm = this.sound.add('bgm', { loop: true, volume: 0.5 });
+      this.gameData.bgm = this.scene.sound.add('bgm', { loop: true, volume: 0.5 });
       this.gameData.bgm.play();
     }
   }
 
-  update(): void {
+  update() {
     if (!this.gameData.bird) return;
     
     // Game over if bird goes out of bounds
@@ -88,37 +93,36 @@ export default class FlappyBirdGame extends Phaser.Scene {
     
     // Move and clean up pipes
     if (this.gameData.pipes) {
-      this.gameData.pipes.children.entries.forEach((pipe) => {
-        const pipeSprite = pipe as Phaser.Physics.Arcade.Sprite;
-        if (pipeSprite.x < -50) {
-          pipeSprite.destroy();
+      this.gameData.pipes.children.entries.forEach((pipe: any) => {
+        if (pipe.x < -50) {
+          pipe.destroy();
         }
       });
     }
   }
 
-  private jump = (): void => {
+  private jump() {
     if (!this.gameData.bird) return;
     this.gameData.bird.setVelocityY(this.gameData.config.parameters.jumpVelocity || -350);
   }
 
-  private spawnPipe = (): void => {
+  private spawnPipe() {
     if (!this.gameData.pipes) return;
     
     const gap = this.gameData.config.parameters.gapSize || 120;
-    const pipeTop = Phaser.Math.Between(100, 400 - gap);
+    const pipeTop = Math.floor(Math.random() * (400 - gap - 100)) + 100;
     
     // Top pipe
-    const topPipe = this.gameData.pipes.create(800, pipeTop, 'pipe') as Phaser.Physics.Arcade.Sprite;
+    const topPipe = this.gameData.pipes.create(800, pipeTop, 'pipe');
     topPipe.setVelocityX(-(this.gameData.config.parameters.pipeSpeed || 200));
     
     // Bottom pipe
-    const bottomPipe = this.gameData.pipes.create(800, pipeTop + gap + 100, 'pipe') as Phaser.Physics.Arcade.Sprite;
+    const bottomPipe = this.gameData.pipes.create(800, pipeTop + gap + 100, 'pipe');
     bottomPipe.setVelocityX(-(this.gameData.config.parameters.pipeSpeed || 200));
     bottomPipe.setFlipY(true);
   }
 
-  private gameOver = (): void => {
-    this.scene.restart();
+  private gameOver() {
+    this.scene.scene.restart();
   }
 }

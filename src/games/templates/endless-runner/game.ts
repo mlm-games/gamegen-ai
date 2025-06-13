@@ -1,4 +1,4 @@
-import Phaser from 'phaser';
+import * as Phaser from 'phaser';
 import type { GameConfig } from '@/types/game';
 
 interface EndlessRunnerData {

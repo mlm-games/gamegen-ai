@@ -1,8 +1,7 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import Phaser from 'phaser';
-import { GameConfig } from '@/types/game';
+import { useEffect, useRef, useState } from 'react';
+import type { GameConfig } from '@/types/game';
 
 interface GameCanvasProps {
   gameTemplate: string;
@@ -11,14 +10,18 @@ interface GameCanvasProps {
 }
 
 export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCanvasProps) {
-  const gameRef = useRef<Phaser.Game | null>(null);
+  const gameRef = useRef<any>(null);
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    if (!containerRef.current || typeof window === 'undefined') return;
 
     const loadGame = async () => {
       try {
+        // Dynamically import Phaser only on client side
+        const Phaser = await import('phaser');
+        
         let GameScene: any;
         
         // Dynamic import based on template
@@ -31,21 +34,6 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
           case 'endless-runner': {
             const runnerModule = await import('@/games/templates/endless-runner/game');
             GameScene = runnerModule.default;
-            break;
-          }
-          case 'whack-a-mole': {
-            const whackModule = await import('@/games/templates/whack-a-mole/game');
-            GameScene = whackModule.default;
-            break;
-          }
-          case 'match-3': {
-            const matchModule = await import('@/games/templates/match-3/game');
-            GameScene = matchModule.default;
-            break;
-          }
-          case 'crossy-road': {
-            const crossyModule = await import('@/games/templates/crossy-road/game');
-            GameScene = crossyModule.default;
             break;
           }
           default:
@@ -72,9 +60,11 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
         };
         
         gameRef.current = new Phaser.Game(phaserConfig);
+        setIsLoading(false);
         onGameReady?.();
       } catch (error) {
         console.error('Failed to load game:', error);
+        setIsLoading(false);
       }
     };
 
@@ -89,9 +79,16 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
   }, [gameTemplate, config, onGameReady]);
 
   return (
-    <div 
-      ref={containerRef} 
-      className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg"
-    />
+    <div className="relative">
+      {isLoading && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-100 rounded-lg">
+          <div className="text-gray-600">Loading game...</div>
+        </div>
+      )}
+      <div 
+        ref={containerRef} 
+        className="w-full max-w-4xl mx-auto rounded-lg overflow-hidden shadow-lg"
+      />
+    </div>
   );
 }
