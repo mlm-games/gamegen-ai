@@ -1,103 +1,106 @@
-import Image from "next/image";
+'use client';
+
+import { useState } from 'react';
+import GameSelector from '@/components/GameSelector';
+import AICustomizer from '@/components/AICustomizer';
+import ParameterControls from '@/components/ParameterControls';
+import ExportManager from '@/components/ExportManager';
+import { useGameStore } from '@/lib/store';
+import { ChevronRight, Sparkles } from 'lucide-react';
+
+type Step = 'select' | 'reskin' | 'parameters' | 'export';
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm/6 text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-[family-name:var(--font-geist-mono)] font-semibold">
-              src/app/page.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
+  const [currentStep, setCurrentStep] = useState<Step>('select');
+  const { selectedTemplate, gameConfig } = useGameStore();
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const steps = [
+    { id: 'select', label: 'Select Template', icon: '🎮' },
+    { id: 'reskin', label: 'AI Reskin', icon: '🎨' },
+    { id: 'parameters', label: 'Set Parameters', icon: '⚙️' },
+    { id: 'export', label: 'Export Game', icon: '📦' },
+  ];
+
+  const canProceed = (step: Step): boolean => {
+    switch (step) {
+      case 'select':
+        return true;
+      case 'reskin':
+        return selectedTemplate !== null;
+      case 'parameters':
+        return selectedTemplate !== null && gameConfig !== null;
+      case 'export':
+        return selectedTemplate !== null && gameConfig !== null;
+      default:
+        return false;
+    }
+  };
+
+  const handleStepClick = (step: Step) => {
+    if (canProceed(step)) {
+      setCurrentStep(step);
+    }
+  };
+
+  return (
+    <main className="min-h-screen bg-gradient-to-br from-purple-50 to-pink-50">
+      <div className="container mx-auto px-4 py-8">
+        {/* Header */}
+        <div className="text-center mb-12">
+          <h1 className="text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-3">
+            <Sparkles className="w-12 h-12 text-purple-600" />
+            GameGen AI
+          </h1>
+          <p className="text-xl text-gray-600">
+            Create custom games with AI - No coding required!
+          </p>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
+
+        {/* Progress Steps */}
+        <div className="flex justify-center mb-12">
+          <div className="flex items-center space-x-2">
+            {steps.map((step, index) => (
+              <div key={step.id} className="flex items-center">
+                <button
+                  onClick={() => handleStepClick(step.id as Step)}
+                  disabled={!canProceed(step.id as Step)}
+                  className={`
+                    flex items-center gap-2 px-4 py-2 rounded-full transition-all
+                    ${currentStep === step.id 
+                      ? 'bg-purple-600 text-white shadow-lg scale-105' 
+                      : canProceed(step.id as Step)
+                        ? 'bg-white text-gray-700 hover:bg-gray-100 cursor-pointer'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                    }
+                  `}
+                >
+                  <span className="text-xl">{step.icon}</span>
+                  <span className="font-medium">{step.label}</span>
+                </button>
+                {index < steps.length - 1 && (
+                  <ChevronRight className="w-5 h-5 text-gray-400 mx-2" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Step Content */}
+        <div className="max-w-6xl mx-auto">
+          {currentStep === 'select' && (
+            <GameSelector onNext={() => setCurrentStep('reskin')} />
+          )}
+          {currentStep === 'reskin' && (
+            <AICustomizer onNext={() => setCurrentStep('parameters')} />
+          )}
+          {currentStep === 'parameters' && (
+            <ParameterControls onNext={() => setCurrentStep('export')} />
+          )}
+          {currentStep === 'export' && (
+            <ExportManager />
+          )}
+        </div>
+      </div>
+    </main>
   );
 }
