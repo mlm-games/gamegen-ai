@@ -23,6 +23,8 @@ export const useGameStore = create<GameStore>((set) => ({
   }),
   
   updateGameConfig: (config) => set((state) => {
+    console.log('Store updateGameConfig called with:', config);
+    
     const newConfig = state.gameConfig ? { ...state.gameConfig } : null;
     
     if (newConfig && config) {
@@ -32,13 +34,21 @@ export const useGameStore = create<GameStore>((set) => ({
           ...newConfig.assets,
           ...config.assets
         };
+        
+        // Special handling for obstacles to ensure it's an array
+        if ('obstacles' in config.assets) {
+          newConfig.assets.obstacles = config.assets.obstacles;
+          console.log('Set obstacles to:', newConfig.assets.obstacles);
+        }
       }
+      
       if (config.parameters) {
         newConfig.parameters = {
           ...newConfig.parameters,
           ...config.parameters
         };
       }
+      
       // Copy other properties
       Object.keys(config).forEach(key => {
         if (key !== 'assets' && key !== 'parameters') {
@@ -47,6 +57,7 @@ export const useGameStore = create<GameStore>((set) => ({
       });
     }
     
+    console.log('Store final config:', newConfig);
     return { gameConfig: newConfig };
   }),
   

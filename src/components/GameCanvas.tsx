@@ -1,4 +1,3 @@
-// src/components/GameCanvas.tsx
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
@@ -15,9 +14,11 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
-    // Store config in localStorage for the iframe to read
+    console.log('GameCanvas received config:', JSON.stringify(config, null, 2));
+    console.log('Obstacles type:', typeof config.assets?.obstacles);
+    console.log('Obstacles value:', config.assets?.obstacles);
+    
     localStorage.setItem('gameConfig', JSON.stringify(config));
-    // Force iframe reload when config changes
     setKey(prev => prev + 1);
   }, [config]);
 

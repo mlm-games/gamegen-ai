@@ -6,9 +6,6 @@ import { Wand2, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
 import GameCanvas from '@/components/GameCanvas';
 import toast from 'react-hot-toast';
 
-
-
-
 interface AICustomizerProps {
   onNext: () => void;
 }
@@ -24,120 +21,124 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
   });
 
   const [generatedImages, setGeneratedImages] = useState<{
-  player?: string;
-  background?: string;
-  obstacle?: string;
+    player?: string;
+    background?: string;
+    obstacle?: string;
   }>({});
 
   const handleGenerateAssets = async () => {
     if (!prompts.theme) {
-        toast.error('Please enter a theme for your game');
-        return;
+      toast.error('Please enter a theme for your game');
+      return;
     }
 
     setIsGenerating(true);
     setGeneratedImages({}); // Reset images
     
     try {
-        // Generate character
-        if (prompts.character) {
+      // Store all updates to apply at once
+      const updates: any = {
+        theme: prompts.theme,
+        assets: { ...gameConfig?.assets }
+      };
+
+      // Generate character
+      if (prompts.character) {
         toast.loading('Generating character...', { id: 'character' });
         const response = await fetch('/api/generate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             prompt: `${prompts.character}, ${prompts.style} style, game asset`,
             type: 'character'
-            })
+          })
         });
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to generate character');
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate character');
         }
         
         const data = await response.json();
         console.log('Character response:', data);
         
         if (data.imageUrl) {
-            toast.success('Character generated!', { id: 'character' });
-            setGeneratedImages(prev => ({ ...prev, player: data.imageUrl }));
-            setGeneratedAsset('player', data.imageUrl);
-            updateGameConfig({
-            assets: { ...gameConfig?.assets, player: data.imageUrl }
-            });
+          toast.success('Character generated!', { id: 'character' });
+          setGeneratedImages(prev => ({ ...prev, player: data.imageUrl }));
+          setGeneratedAsset('player', data.imageUrl);
+          updates.assets.player = data.imageUrl;
         }
-        }
+      }
 
-        // Generate background
-        if (prompts.environment) {
+      // Generate background
+      if (prompts.environment) {
         toast.loading('Generating background...', { id: 'background' });
         const response = await fetch('/api/generate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             prompt: `${prompts.environment}, ${prompts.style} style, game background`,
             type: 'background'
-            })
+          })
         });
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to generate background');
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate background');
         }
         
         const data = await response.json();
         console.log('Background response:', data);
         
         if (data.imageUrl) {
-            toast.success('Background generated!', { id: 'background' });
-            setGeneratedImages(prev => ({ ...prev, background: data.imageUrl }));
-            setGeneratedAsset('background', data.imageUrl);
-            updateGameConfig({
-            assets: { ...gameConfig?.assets, background: data.imageUrl }
-            });
+          toast.success('Background generated!', { id: 'background' });
+          setGeneratedImages(prev => ({ ...prev, background: data.imageUrl }));
+          setGeneratedAsset('background', data.imageUrl);
+          updates.assets.background = data.imageUrl;
         }
-        }
+      }
 
-        // Generate obstacles for flappy bird
-        if (selectedTemplate?.id === 'flappy-bird') {
+      // Generate obstacles for flappy bird
+      if (selectedTemplate?.id === 'flappy-bird') {
         toast.loading('Generating obstacles...', { id: 'obstacle' });
         const response = await fetch('/api/generate-image', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
             prompt: `vertical pipe obstacle, ${prompts.style} style, game asset`,
             type: 'obstacle'
-            })
+          })
         });
         
         if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to generate obstacle');
+          const error = await response.json();
+          throw new Error(error.error || 'Failed to generate obstacle');
         }
         
         const data = await response.json();
         console.log('Obstacle response:', data);
         
         if (data.imageUrl) {
-            toast.success('Obstacle generated!', { id: 'obstacle' });
-            setGeneratedImages(prev => ({ ...prev, obstacle: data.imageUrl }));
-            setGeneratedAsset('obstacle', data.imageUrl);
-            updateGameConfig({
-            assets: { ...gameConfig?.assets, obstacles: [data.imageUrl] }
-            });
+          toast.success('Obstacle generated!', { id: 'obstacle' });
+          setGeneratedImages(prev => ({ ...prev, obstacle: data.imageUrl }));
+          setGeneratedAsset('obstacle', data.imageUrl);
+          // Make sure obstacles is an array
+          updates.assets.obstacles = [data.imageUrl];
         }
-        }
+      }
 
-        updateGameConfig({ theme: prompts.theme });
-        toast.success('All assets generated successfully!');
+      // Apply all updates at once
+      console.log('Applying config updates:', updates);
+      updateGameConfig(updates);
+      
+      toast.success('All assets generated successfully!');
     } catch (error) {
-        console.error('Generation error:', error);
-        toast.error('Failed to generate assets: ' + (error as Error).message);
+      console.error('Generation error:', error);
+      toast.error('Failed to generate assets: ' + (error as Error).message);
     } finally {
-        setIsGenerating(false);
+      setIsGenerating(false);
     }
-    };
+  };
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -221,13 +222,47 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
                 Generating Assets...
               </>
             ) : (
-              
-            <>
+              <>
                 <Wand2 className="w-5 h-5" />
                 Generate Assets
               </>
             )}
           </button>
+
+          {/* Show generated images */}
+          {generatedImages.player && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-600 mb-2">Generated Character:</p>
+              <img 
+                src={generatedImages.player} 
+                alt="Generated character" 
+                className="w-20 h-20 object-contain border rounded bg-white"
+                onError={(e) => console.error('Failed to load player image:', e)}
+              />
+            </div>
+          )}
+          {generatedImages.background && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-600 mb-2">Generated Background:</p>
+              <img 
+                src={generatedImages.background} 
+                alt="Generated background" 
+                className="w-32 h-20 object-cover border rounded"
+                onError={(e) => console.error('Failed to load background image:', e)}
+              />
+            </div>
+          )}
+          {generatedImages.obstacle && (
+            <div className="mt-4">
+              <p className="text-sm text-gray-600 mb-2">Generated Obstacle:</p>
+              <img 
+                src={generatedImages.obstacle} 
+                alt="Generated obstacle" 
+                className="w-20 h-20 object-contain border rounded bg-white"
+                onError={(e) => console.error('Failed to load obstacle image:', e)}
+              />
+            </div>
+          )}
         </div>
 
         <div className="mt-8 pt-8 border-t border-gray-200">

@@ -11,35 +11,38 @@ class FlappyBirdGame extends Phaser.Scene {
     
     // Load custom assets if provided
     if (this.gameConfig.assets && this.gameConfig.assets.player) {
-      console.log('Loading custom player:', this.gameConfig.assets.player.substring(0, 50) + '...');
-      if (this.gameConfig.assets.player.startsWith('data:')) {
+      const playerAsset = this.gameConfig.assets.player;
+      console.log('Loading custom player:', playerAsset.substring ? playerAsset.substring(0, 50) + '...' : playerAsset);
+      if (playerAsset.startsWith && playerAsset.startsWith('data:')) {
         // Base64 image
-        this.textures.addBase64('bird', this.gameConfig.assets.player);
+        this.textures.addBase64('bird', playerAsset);
       } else {
         // URL
-        this.load.image('bird', this.gameConfig.assets.player);
+        this.load.image('bird', playerAsset);
       }
     }
     
     if (this.gameConfig.assets && this.gameConfig.assets.background) {
-      console.log('Loading custom background:', this.gameConfig.assets.background.substring(0, 50) + '...');
-      if (this.gameConfig.assets.background.startsWith('data:')) {
+      const bgAsset = this.gameConfig.assets.background;
+      console.log('Loading custom background:', bgAsset.substring ? bgAsset.substring(0, 50) + '...' : bgAsset);
+      if (bgAsset.startsWith && bgAsset.startsWith('data:')) {
         // Base64 image
-        this.textures.addBase64('background', this.gameConfig.assets.background);
+        this.textures.addBase64('background', bgAsset);
       } else {
         // URL
-        this.load.image('background', this.gameConfig.assets.background);
+        this.load.image('background', bgAsset);
       }
     }
     
     if (this.gameConfig.assets && this.gameConfig.assets.obstacles && Array.isArray(this.gameConfig.assets.obstacles) && this.gameConfig.assets.obstacles[0]) {
-      console.log('Loading custom pipe:', this.gameConfig.assets.obstacles[0].substring(0, 50) + '...');
-      if (this.gameConfig.assets.obstacles[0].startsWith('data:')) {
+      const pipeAsset = this.gameConfig.assets.obstacles[0];
+      console.log('Loading custom pipe:', pipeAsset.substring ? pipeAsset.substring(0, 50) + '...' : pipeAsset);
+      if (pipeAsset.startsWith && pipeAsset.startsWith('data:')) {
         // Base64 image
-        this.textures.addBase64('pipe', this.gameConfig.assets.obstacles[0]);
+        this.textures.addBase64('pipe', pipeAsset);
       } else {
         // URL
-        this.load.image('pipe', this.gameConfig.assets.obstacles[0]);
+        this.load.image('pipe', pipeAsset);
       }
     }
     
@@ -160,18 +163,36 @@ class FlappyBirdGame extends Phaser.Scene {
 // Main game class that initializes Phaser
 class GameMain {
   constructor(config) {
-    console.log('Initializing game with config:', config);
+    console.log('GameMain constructor received:', config);
+    console.log('Config type:', typeof config);
+    console.log('Config stringified:', JSON.stringify(config));
     
     // Ensure config has proper structure
-    if (!config) {
+    if (!config || typeof config !== 'object') {
+      console.warn('Invalid config, using defaults');
       config = {};
     }
-    if (!config.assets) {
+    
+    if (!config.assets || typeof config.assets !== 'object') {
       config.assets = {};
     }
-    if (!config.parameters) {
+    
+    if (!config.parameters || typeof config.parameters !== 'object') {
       config.parameters = {};
     }
+    
+    // Fix obstacles if it's not an array
+    if (!Array.isArray(config.assets.obstacles)) {
+      console.log('Obstacles is not an array:', config.assets.obstacles);
+      if (config.assets.obstacles && typeof config.assets.obstacles === 'object') {
+        // If it's an object, try to convert it to array
+        config.assets.obstacles = Object.values(config.assets.obstacles);
+      } else {
+        config.assets.obstacles = [];
+      }
+    }
+    
+    console.log('Final config after fixes:', config);
     
     const phaserConfig = {
       type: Phaser.AUTO,
