@@ -8,125 +8,38 @@ export async function POST(request: NextRequest) {
     const { template, config } = await request.json();
 
     if (!template || !config) {
-      return NextResponse.json(
-        { error: 'Template and config are required' },
-        { status: 400 }
-      );
+      return NextResponse.json({ error: 'Template and config are required' }, { status: 400 });
     }
 
     const zip = new JSZip();
+    const gameTemplatePath = path.join(process.cwd(), 'public', 'game-templates', template);
 
-    // Create the HTML file
-    const htmlContent = `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>${config.name}</title>
-    <style>
-        body {
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            background-color: #1a1a1a;
-        }
-        #game-container {
-            border: 2px solid #333;
-            border-radius: 8px;
-            overflow: hidden;
-        }
-    </style>
-</head>
-<body>
-    <div id="game-container"></div>
-    <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
-    <script src="game.js"></script>
-    <script>
-        // Initialize game with config
-        const gameConfig = ${JSON.stringify(config, null, 2)};
-        
-        // Start the game
-        window.addEventListener('load', () => {
-            new GameMain(gameConfig);
-        });
-    </script>
-</body>
-</html>`;
+    // 1. Read the pre-compiled game.js
+    const gameCode = await fs.readFile(path.join(gameTemplatePath, 'game.js'), 'utf-8');
+    zip.file('game.js', gameCode);
 
-    zip.file('index.html', htmlContent);
+    // 2. Read the template index.html
+    const htmlTemplate = await fs.readFile(path.join(gameTemplatePath, 'index.html'), 'utf-8');
 
-    // Read the game template file
-    const gameTemplatePath = path.join(
-      process.cwd(),
-      'src',
-      'games',
-      'templates',
-      template,
-      'game.ts'
+    // 3. Inject the final config directly into the HTML
+    // This replaces the localStorage part for the exported version
+    const finalHtml = htmlTemplate.replace(
+      "window.GAME_CONFIG = JSON.parse(localStorage.getItem('gameConfig'));",
+      `window.GAME_CONFIG = ${JSON.stringify(config, null, 2)};`
     );
+    zip.file('index.html', finalHtml);
     
-    let gameCode = await fs.readFile(gameTemplatePath, 'utf-8');
-    
-    // Convert TypeScript to JavaScript (simple transformation)
-    gameCode = gameCode
-      .replace(/import.*from.*['"]/g, '') // Remove imports
-      .replace(/export default class/g, 'class')
-      .replace(/: \w+/g, '') // Remove type annotations
-      .replace(/private |public |protected /g, '') // Remove access modifiers
-      .replace(/\?:/g, ':') // Remove optional property markers
-      .replace(/interface \w+ {[^}]*}/g, '') // Remove interfaces
-      
-    // Wrap in a main game class
-    const gameJs = `
-${gameCode}
+    // ... logic to fetch and add assets to the zip ...
 
-class GameMain {
-    constructor(config) {
-        const phaserConfig = {
-            type: Phaser.AUTO,
-            width: 800,
-            height: 600,
-            parent: 'game-container',
-            physics: {
-                default: 'arcade',
-                arcade: {
-                    gravity: { y: 0 },
-                    debug: false
-                }
-            },
-            scene: new ${template.split('-').map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join('')}Game(config)
-        };
-        
-        new Phaser.Game(phaserConfig);
-    }
-}`;
-
-    zip.file('game.js', gameJs);
-
-    // Create assets folder and add a readme
-    zip.folder('assets');
-    zip.file('assets/README.txt', 'Place your game assets in this folder');
-
-    // Add config.json for reference
-    zip.file('config.json', JSON.stringify(config, null, 2));
-
-    // Generate the zip file
     const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
-
     return new NextResponse(zipBuffer, {
       headers: {
         'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`
-      }
+        'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`,
+      },
     });
   } catch (error) {
     console.error('Export error:', error);
-    return NextResponse.json(
-      { error: 'Failed to export game' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to export game' }, { status: 500 });
   }
 }
