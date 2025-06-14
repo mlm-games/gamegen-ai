@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   width="120"
+   height="120"
+   viewBox="0 0 120 120"
+   version="1.1"
+   id="svg1"
+   sodipodi:docname="hammer.svg"
+   inkscape:version="1.4.2 (ebf0e940d0, 2025-05-08)"
+   inkscape:export-filename="hammer.png"
+   inkscape:export-xdpi="96"
+   inkscape:export-ydpi="96"
+   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
+   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg">
+  <sodipodi:namedview
+     id="namedview1"
+     pagecolor="#ffffff"
+     bordercolor="#000000"
+     borderopacity="0.25"
+     inkscape:showpageshadow="2"
+     inkscape:pageopacity="0.0"
+     inkscape:pagecheckerboard="0"
+     inkscape:deskcolor="#d1d1d1"
+     inkscape:document-units="px"
+     inkscape:zoom="3.5152501"
+     inkscape:cx="57.606143"
+     inkscape:cy="58.744042"
+     inkscape:window-width="1062"
+     inkscape:window-height="902"
+     inkscape:window-x="0"
+     inkscape:window-y="0"
+     inkscape:window-maximized="0"
+     inkscape:current-layer="layer1" />
+  <defs
+     id="defs1" />
+  <g
+     inkscape:label="Layer 1"
+     inkscape:groupmode="layer"
+     id="layer1">
+    <rect
+       style="fill:#ff8080;stroke:#000000;stroke-width:1.06932;stroke-linecap:round;stroke-linejoin:round"
+       id="rect7"
+       width="9.1031933"
+       height="32.430126"
+       x="57.179432"
+       y="41.533318"
+       rx="6.5959525"
+       ry="3.7610869" />
+    <path
+       style="fill:#ffaaaa;stroke:#000000;stroke-width:1.06932;stroke-linecap:round;stroke-linejoin:round"
+       d="m 57.17943,66.567098 h 8.534244"
+       id="path8" />
+    <rect
+       style="fill:#6c5353;stroke:#000000;stroke-width:1.06932;stroke-linecap:round;stroke-linejoin:round"
+       id="rect6"
+       width="32.999073"
+       height="21.051134"
+       x="44.947014"
+       y="23.042458"
+       rx="6.5959525"
+       ry="7.45926" />
+  </g>
+</svg>
