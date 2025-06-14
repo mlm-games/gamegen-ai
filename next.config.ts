@@ -14,6 +14,7 @@ const nextConfig: NextConfig = {
         hostname: 'pbxt.replicate.delivery',
       },
     ],
+    dangerouslyAllowSVG: true,
   },
   webpack: (config: Configuration) => {
     config.module?.rules?.push({

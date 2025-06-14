@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Inkscape Output</title>
+</head>
+<body>
+    <canvas id='canvas' width='120' height='120'></canvas>
+    <script>
+    var ctx = document.getElementById("canvas").getContext("2d");
+    	
+// #layer1
+	
+// #rect1
+	ctx.beginPath();
+	ctx.fillStyle = 'rgb(255, 230, 213)';
+	ctx.strokeStyle = 'rgb(0, 0, 0)';
+	ctx.lineWidth = 2.467150;
+	ctx.lineCap = 'round';
+	ctx.lineJoin = 'round';
+	ctx.moveTo(36.497696, 41.025437);
+	ctx.lineTo(36.497696, 78.974563);
+	ctx.quadraticCurveTo(36.497696, 84.147465, 36.497696, 84.147465);
+	ctx.lineTo(83.502304, 84.147465);
+	ctx.quadraticCurveTo(83.502304, 84.147465, 83.502304, 78.974563);
+	ctx.lineTo(83.502304, 41.025437);
+	ctx.quadraticCurveTo(83.502304, 35.852535, 83.502304, 35.852535);
+	ctx.lineTo(36.497696, 35.852535);
+	ctx.quadraticCurveTo(36.497696, 35.852535, 36.497696, 41.025437);
+	ctx.fill();
+	ctx.stroke();
+
+    </script>
+</body>
+</html>
