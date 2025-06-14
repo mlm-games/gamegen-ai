@@ -12,12 +12,20 @@ class FlappyBirdGame extends Phaser.Scene {
   preload() {
     console.log('Preloading with config:', this.gameConfig);
     
+    // Clear any existing textures to avoid conflicts
+    if (this.textures.exists('bird')) this.textures.remove('bird');
+    if (this.textures.exists('background')) this.textures.remove('background');
+    if (this.textures.exists('pipe')) this.textures.remove('pipe');
+    
     // Load custom assets if provided
     if (this.gameConfig.assets && this.gameConfig.assets.player) {
       const playerAsset = this.gameConfig.assets.player;
       console.log('Loading custom player');
       if (playerAsset.startsWith('data:')) {
-        this.textures.addBase64('bird', playerAsset);
+        // For base64, check if texture already exists
+        if (!this.textures.exists('bird')) {
+          this.textures.addBase64('bird', playerAsset);
+        }
       } else {
         this.load.image('bird', playerAsset);
       }
@@ -27,7 +35,9 @@ class FlappyBirdGame extends Phaser.Scene {
       const bgAsset = this.gameConfig.assets.background;
       console.log('Loading custom background');
       if (bgAsset.startsWith('data:')) {
-        this.textures.addBase64('background', bgAsset);
+        if (!this.textures.exists('background')) {
+          this.textures.addBase64('background', bgAsset);
+        }
       } else {
         this.load.image('background', bgAsset);
       }
@@ -37,22 +47,40 @@ class FlappyBirdGame extends Phaser.Scene {
       const pipeAsset = this.gameConfig.assets.obstacles[0];
       console.log('Loading custom pipe');
       if (pipeAsset.startsWith('data:')) {
-        this.textures.addBase64('pipe', pipeAsset);
+        if (!this.textures.exists('pipe')) {
+          this.textures.addBase64('pipe', pipeAsset);
+        }
       } else {
         this.load.image('pipe', pipeAsset);
       }
     }
     
-    // Load default assets as fallback
-    this.load.image('bird-default', '/games/flappy-bird/assets/bird.png');
-    this.load.image('background-default', '/games/flappy-bird/assets/background.png');
-    this.load.image('pipe-default', '/games/flappy-bird/assets/pipe.png');
+    // Load default assets as fallback - check if they exist first
+    if (!this.textures.exists('bird-default')) {
+      this.load.image('bird-default', '/games/flappy-bird/assets/bird.png');
+    }
+    if (!this.textures.exists('background-default')) {
+      this.load.image('background-default', '/games/flappy-bird/assets/background.png');
+    }
+    if (!this.textures.exists('pipe-default')) {
+      this.load.image('pipe-default', '/games/flappy-bird/assets/pipe.png');
+    }
   }
 
   create() {
+    // Clear any existing game objects
+    this.children.removeAll();
+    
     // Set background color first
     this.cameras.main.setBackgroundColor('#87CEEB');
     
+    // Wait a frame to ensure textures are ready
+    this.time.delayedCall(100, () => {
+      this.setupGame();
+    });
+  }
+
+  setupGame() {
     // Check which assets loaded successfully
     const birdAsset = this.textures.exists('bird') ? 'bird' : 'bird-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
@@ -72,10 +100,8 @@ class FlappyBirdGame extends Phaser.Scene {
     // Scale the bird
     const birdScale = 0.4;
     this.bird.setScale(birdScale);
-    // this.bird.setCircle(20);
-    this.bird.debugShowBody = true;
     
-    // This makes the game more forgiving and fun
+    // Adjust collision box to be smaller than the sprite
     const birdWidth = this.bird.width * birdScale;
     const birdHeight = this.bird.height * birdScale;
     this.bird.body.setSize(birdWidth * 0.4, birdHeight * 0.4); // 60% of actual size
@@ -86,10 +112,13 @@ class FlappyBirdGame extends Phaser.Scene {
     // Pipes
     this.pipes = this.physics.add.group();
     
+    // Store pipe asset for spawning
+    this.pipeAsset = pipeAsset;
+    
     // Spawn pipes timer
-    this.time.addEvent({
+    this.pipeTimer = this.time.addEvent({
       delay: this.gameConfig.parameters?.pipeSpawnDelay || 1500,
-      callback: () => this.spawnPipe(pipeAsset),
+      callback: () => this.spawnPipe(),
       callbackScope: this,
       loop: true
     });
@@ -127,11 +156,9 @@ class FlappyBirdGame extends Phaser.Scene {
     // Remove pipes that have gone off screen
     this.pipes.children.entries.forEach(pipe => {
       if (pipe.x < -100) {
-        // Check if this pipe hasn't been scored yet
         if (!pipe.getData('scored')) {
           this.score++;
           this.scoreText.setText('Score: ' + this.score);
-          // Mark the pipe pair as scored
           this.pipes.children.entries.forEach(p => {
             if (Math.abs(p.x - pipe.x) < 10) {
               p.setData('scored', true);
@@ -149,41 +176,42 @@ class FlappyBirdGame extends Phaser.Scene {
     }
   }
 
-  spawnPipe(pipeAsset) {
+  spawnPipe() {
     const gap = this.gameConfig.parameters?.gapSize || 120;
     const pipeTop = Phaser.Math.Between(100, 400 - gap);
+    const pipeScaleX = 0.5;
+    const pipeScaleY = 1;
     
     // Top pipe
-    const topPipe = this.pipes.create(850, pipeTop, pipeAsset);
+    const topPipe = this.pipes.create(850, pipeTop, this.pipeAsset);
     topPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     topPipe.setOrigin(0.5, 1);
     topPipe.setImmovable(true);
     
-    // Scale pipes
-    const pipeScaleX = 0.5;
-    const pipeScaleY = 1;
     topPipe.setScale(pipeScaleX, pipeScaleY);
     
-    // Adjust pipe collision box to be more forgiving
     const pipeWidth = topPipe.width * pipeScaleX;
-    topPipe.body.setSize(pipeWidth * 0.8, topPipe.height); // 80% width for more forgiving gameplay
-    topPipe.body.setOffset(pipeWidth * 0.1, 0);
+    topPipe.body.setSize(pipeWidth * 0.8, topPipe.height * 0.5); // 80% width for more forgiving gameplay
     
     // Bottom pipe
-    const bottomPipe = this.pipes.create(850, pipeTop + gap, pipeAsset);
+    const bottomPipe = this.pipes.create(850, pipeTop + gap, this.pipeAsset);
     bottomPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     bottomPipe.setOrigin(0.5, 0);
     bottomPipe.setFlipY(true);
     bottomPipe.setScale(pipeScaleX, pipeScaleY);
     bottomPipe.setImmovable(true);
     
-    // Adjust bottom pipe collision box
     bottomPipe.body.setSize(pipeWidth * 0.8, bottomPipe.height);
     bottomPipe.body.setOffset(pipeWidth * 0.1, 0);
   }
 
   gameOver() {
+    // Stop physics and timers
     this.physics.pause();
+    if (this.pipeTimer) {
+      this.pipeTimer.remove();
+    }
+    
     this.bird.setTint(0xff0000);
     
     const gameOverText = this.add.text(400, 250, 'Game Over!', {
@@ -210,7 +238,6 @@ class FlappyBirdGame extends Phaser.Scene {
     // Restart on click
     this.input.once('pointerdown', () => {
       this.scene.restart();
-      this.score = 0;
     });
   }
 }
@@ -226,7 +253,7 @@ window.addEventListener('load', () => {
       default: 'arcade',
       arcade: {
         gravity: { y: 0 },
-        debug: false // Set to true to see collision boxes
+        debug: false
       }
     },
     scene: FlappyBirdGame
