@@ -5,90 +5,101 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   try {
     const response = await fetch(url);
     if (!response.ok) {
-      throw new Error(`Failed to fetch image: ${response.statusText}`);
+      throw new Error(`Failed to fetch image from ${url}: ${response.statusText}`);
     }
     const buffer = await response.arrayBuffer();
     const base64 = Buffer.from(buffer).toString('base64');
     const contentType = response.headers.get('content-type') || 'image/png';
     return `data:${contentType};base64,${base64}`;
   } catch (error) {
-    console.error('Failed to fetch image as base64:', error);
+    console.error('Error in fetchImageAsBase64:', error);
     return '';
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, type, style } = await request.json();
+    const { prompt, type, style, width = 512, height = 512 } = await request.json();
 
-    if (!prompt) {
-      return NextResponse.json(
-        { error: 'Prompt is required' },
-        { status: 400 }
-      );
+    if (!prompt || !process.env.REPLICATE_API_TOKEN) {
+      return NextResponse.json({ error: 'Prompt or API token is missing' }, { status: 400 });
     }
 
-    if (!process.env.REPLICATE_API_TOKEN) {
-      console.error('REPLICATE_API_TOKEN is not set');
-      return NextResponse.json(
-        { error: 'API configuration error' },
-        { status: 500 }
-      );
-    }
+    const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
-    const replicate = new Replicate({
-      auth: process.env.REPLICATE_API_TOKEN,
-    });
-
-    const model = "bytedance/sdxl-lightning-4step:727e49a643e999d602a896c774a0658ffefea21465756a6ce24b7ea4165eba6a";
+    // --- STEP 1: GENERATE THE INITIAL IMAGE ---
+    // CORRECTED: The version hash is the key. The model name is not needed here.
+    const generationVersion = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
     
     let enhancedPrompt = prompt;
-    if (type === 'character') {
-      enhancedPrompt = `${prompt}, ${style} style, game sprite, character sheet, centered, clean design, vibrant colors, simple shapes, white background, 2D game asset`;
-    } else if (type === 'background') {
-      enhancedPrompt = `${prompt}, ${style} style, 2D game background, vibrant colors, simple design, side-scrolling game background`;
-    } else if (type === 'obstacle') {
-      enhancedPrompt = `${prompt}, ${style} style, game obstacle, simple design, vibrant colors, white background, 2D game asset`;
-    } else if (type === 'item') {
-        enhancedPrompt = `${prompt}, ${style} style, game item, icon, simple design, vibrant colors, white background, 2D game asset`
-    }
+    let negativePrompt = "multiple objects, collage, blurry, text, watermark, signature, ugly, deformed, extra limbs";
 
-    const output = await replicate.run(model, {
-      input: {
-        prompt: enhancedPrompt,
-        negative_prompt: "blurry, bad quality, text, watermark, signature, 3d render, realistic, photograph, complex, detailed",
-        width: type === 'background' ? 1024 : 512,
-        height: type === 'background' ? 576 : 512,
-        num_inference_steps: 4,
-        guidance_scale: 0,
-        scheduler: "K_EULER",
-        num_outputs: 1,
-      }
-    });
-
-    let imageUrl: string | undefined;
-    if (Array.isArray(output) && output.length > 0) {
-      imageUrl = output[0];
+    if (type === 'character' || type === 'obstacle' || type === 'item') {
+      enhancedPrompt = `${prompt}, ${style} style, single object, centered, game asset, on a solid plain white background, no shadows`;
+      negativePrompt += ", multiple subjects, scene, environment, photo, realistic";
+    } else { // Background
+      enhancedPrompt = `${prompt}, ${style} style, 2d game background, no characters, landscape, beautiful, simple`;
     }
     
-    if (!imageUrl) {
-      console.error('No image URL found in output:', output);
-      throw new Error('No image URL returned from Replicate');
+    console.log(`[API] Creating prediction with prompt: "${enhancedPrompt}"`);
+    
+    // CORRECTED: The API call now uses the 'version' property correctly.
+    const prediction = await replicate.predictions.create({
+        version: generationVersion,
+        input: {
+            prompt: enhancedPrompt,
+            negative_prompt: negativePrompt,
+            width,
+            height,
+        }
+    });
+
+    const finalPrediction = await replicate.wait(prediction);
+
+    if (finalPrediction.status === 'failed') {
+        throw new Error(`Image generation failed: ${finalPrediction.error}`);
     }
 
-    const base64Image = await fetchImageAsBase64(imageUrl);
+    if (!Array.isArray(finalPrediction.output) || finalPrediction.output.length === 0 || typeof finalPrediction.output[0] !== 'string') {
+      throw new Error('Image generation returned an invalid format.');
+    }
+    const initialImageUrl = finalPrediction.output[0];
+    console.log(`[API] Initial image URL: ${initialImageUrl}`);
+    
+    let finalImageUrl = initialImageUrl;
+
+    // --- STEP 2: REMOVE BACKGROUND FOR RELEVANT ASSETS ---
+    if (type === 'character' || type === 'obstacle' || type === 'item') {
+        console.log(`[API] Removing background...`);
+        // This model identifier is correct as is.
+        const removalVersion = "fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003";
+        
+        const removalPrediction = await replicate.predictions.create({
+            version: removalVersion,
+            input: { image: initialImageUrl }
+        });
+
+        const finalRemovalPrediction = await replicate.wait(removalPrediction);
+
+        if (finalRemovalPrediction.status === 'failed' || typeof finalRemovalPrediction.output !== 'string') {
+            console.warn("Background removal failed, using original image instead.");
+        } else {
+            finalImageUrl = finalRemovalPrediction.output;
+            console.log(`[API] Transparent image URL: ${finalImageUrl}`);
+        }
+    }
+
+    // --- STEP 3: CONVERT TO BASE64 FOR FRONTEND ---
+    const base64Image = await fetchImageAsBase64(finalImageUrl);
     if (!base64Image) {
-        throw new Error('Failed to convert generated image to Base64');
+        throw new Error('Failed to convert final image to Base64');
     }
 
-    // Return the base64 string directly
     return NextResponse.json({ assetUrl: base64Image });
+
   } catch (error) {
-    console.error('Image generation error:', error);
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
-    return NextResponse.json(
-      { error: `Failed to generate image: ${errorMessage}` },
-      { status: 500 }
-    );
+    console.error("[API] Full error in image generation route:", error);
+    return NextResponse.json({ error: `Image generation pipeline failed: ${errorMessage}` }, { status: 500 });
   }
 }
