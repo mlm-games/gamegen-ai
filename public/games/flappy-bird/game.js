@@ -201,7 +201,7 @@ class FlappyBirdGame extends Phaser.Scene {
     bottomPipe.setScale(pipeScaleX, pipeScaleY);
     bottomPipe.setImmovable(true);
     
-    bottomPipe.body.setSize(pipeWidth * 0.8, bottomPipe.height);
+    bottomPipe.body.setSize(pipeWidth * 0.8, bottomPipe.height * 0.5);
     bottomPipe.body.setOffset(pipeWidth * 0.1, 0);
   }
 
