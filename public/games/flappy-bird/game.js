@@ -97,14 +97,18 @@ class FlappyBirdGame extends Phaser.Scene {
     this.bird.setGravityY(this.gameConfig.parameters?.gravity || 800);
     this.bird.setCollideWorldBounds(true);
     
-    // Scale the bird
-    const birdScale = 0.4;
-    this.bird.setScale(birdScale);
+    // Calculate proper scale to fit game dimensions
+    const targetHeight = 40; // Target height in pixels
+    const birdTexture = this.textures.get(birdAsset);
+    const birdFrame = birdTexture.get(0);
+    const scale = targetHeight / birdFrame.height;
     
-    // Adjust collision box to be smaller than the sprite
-    const birdWidth = this.bird.width * birdScale;
-    const birdHeight = this.bird.height * birdScale;
-    this.bird.body.setSize(birdWidth * 0.4, birdHeight * 0.4); // 60% of actual size
+    this.bird.setScale(scale);
+    
+    // Adjust collision box to match visual size
+    const birdWidth = birdFrame.width * scale;
+    const birdHeight = birdFrame.height * scale;
+    this.bird.body.setSize(birdWidth * 0.8, birdHeight * 0.8);
     
     // Debug: Show collision boxes
     // this.physics.world.createDebugGraphic();

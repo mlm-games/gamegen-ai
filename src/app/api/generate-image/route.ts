@@ -17,15 +17,26 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   }
 }
 
+// Define consistent dimensions for different asset types
+const ASSET_DIMENSIONS = {
+  character: { width: 512, height: 512 },
+  obstacle: { width: 512, height: 512 },
+  item: { width: 256, height: 256 },
+  background: { width: 1024, height: 768 }
+};
+
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, type, style, width = 512, height = 512 } = await request.json();
+    const { prompt, type, style } = await request.json();
 
     if (!prompt || !process.env.REPLICATE_API_TOKEN) {
       return NextResponse.json({ error: 'Prompt or API token is missing' }, { status: 400 });
     }
 
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
+
+    // Get dimensions based on asset type
+    const dimensions = ASSET_DIMENSIONS[type as keyof typeof ASSET_DIMENSIONS] || ASSET_DIMENSIONS.character;
 
     // INITIAL IMAGE
     const generationVersion = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
@@ -34,21 +45,24 @@ export async function POST(request: NextRequest) {
     let negativePrompt = "multiple objects, collage, blurry, text, watermark, signature, ugly, deformed, extra limbs";
 
     if (type === 'character' || type === 'obstacle' || type === 'item') {
-      enhancedPrompt = `${prompt}, ${style} style, single object, centered, game asset, on a solid plain white background, no shadows`;
-      negativePrompt += ", multiple subjects, scene, environment, photo, realistic";
+      enhancedPrompt = `${prompt}, ${style} style, single object, centered, game asset, on a solid plain white background, no shadows, perfect square composition`;
+      negativePrompt += ", multiple subjects, scene, environment, photo, realistic, asymmetric";
     } else { // Background
-      enhancedPrompt = `${prompt}, ${style} style, 2d game background, no characters, landscape, beautiful, simple`;
+      enhancedPrompt = `${prompt}, ${style} style, 2d game background, no characters, landscape, beautiful, simple, wide aspect ratio`;
     }
     
     console.log(`[API] Creating prediction with prompt: "${enhancedPrompt}"`);
+    console.log(`[API] Using dimensions: ${dimensions.width}x${dimensions.height}`);
     
     const prediction = await replicate.predictions.create({
         version: generationVersion,
         input: {
             prompt: enhancedPrompt,
             negative_prompt: negativePrompt,
-            width,
-            height,
+            width: dimensions.width,
+            height: dimensions.height,
+            num_inference_steps: 30,
+            guidance_scale: 7.5
         }
     });
 
@@ -69,7 +83,6 @@ export async function POST(request: NextRequest) {
     // REMOVE BACKGROUND FOR RELEVANT ASSETS
     if (type === 'character' || type === 'obstacle' || type === 'item') {
         console.log(`[API] Removing background...`);
-        // This model identifier is correct as is.
         const removalVersion = "fb8af171cfa1616ddcf1242c093f9c46bcada5ad4cf6f2fbe8b81b330ec5c003";
         
         const removalPrediction = await replicate.predictions.create({
@@ -93,7 +106,10 @@ export async function POST(request: NextRequest) {
         throw new Error('Failed to convert final image to Base64');
     }
 
-    return NextResponse.json({ assetUrl: base64Image });
+    return NextResponse.json({ 
+      assetUrl: base64Image,
+      dimensions: dimensions 
+    });
 
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
