@@ -27,8 +27,7 @@ export async function POST(request: NextRequest) {
 
     const replicate = new Replicate({ auth: process.env.REPLICATE_API_TOKEN });
 
-    // --- STEP 1: GENERATE THE INITIAL IMAGE ---
-    // CORRECTED: The version hash is the key. The model name is not needed here.
+    // INITIAL IMAGE
     const generationVersion = "39ed52f2a78e934b3ba6e2a89f5b1c712de7dfea535525255b1aa35c5565e08b";
     
     let enhancedPrompt = prompt;
@@ -43,7 +42,6 @@ export async function POST(request: NextRequest) {
     
     console.log(`[API] Creating prediction with prompt: "${enhancedPrompt}"`);
     
-    // CORRECTED: The API call now uses the 'version' property correctly.
     const prediction = await replicate.predictions.create({
         version: generationVersion,
         input: {
@@ -68,7 +66,7 @@ export async function POST(request: NextRequest) {
     
     let finalImageUrl = initialImageUrl;
 
-    // --- STEP 2: REMOVE BACKGROUND FOR RELEVANT ASSETS ---
+    // REMOVE BACKGROUND FOR RELEVANT ASSETS
     if (type === 'character' || type === 'obstacle' || type === 'item') {
         console.log(`[API] Removing background...`);
         // This model identifier is correct as is.
@@ -89,7 +87,7 @@ export async function POST(request: NextRequest) {
         }
     }
 
-    // --- STEP 3: CONVERT TO BASE64 FOR FRONTEND ---
+    // CONVERT TO BASE64 FOR FRONTEND 
     const base64Image = await fetchImageAsBase64(finalImageUrl);
     if (!base64Image) {
         throw new Error('Failed to convert final image to Base64');

@@ -1,4 +1,3 @@
-// src/app/api/export-game/route.ts
 import { NextRequest, NextResponse } from 'next/server';
 import JSZip from 'jszip';
 import fs from 'fs/promises';
