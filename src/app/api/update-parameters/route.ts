@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { prompt, currentParameters, gameType } = await request.json();
+    const { prompt, currentParameters, parameterConfigs } = await request.json();
 
     if (!prompt) {
       return NextResponse.json(
@@ -16,40 +16,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parameterConstraints = {
-      'flappy-bird': {
-        gravity: { min: 200, max: 1500, description: 'How fast the bird falls' },
-        jumpVelocity: { min: -500, max: -200, description: 'How high the bird jumps (negative value)' },
-        pipeSpeed: { min: 100, max: 400, description: 'How fast pipes move' },
-        gapSize: { min: 100, max: 250, description: 'Gap between pipes' },
-        pipeSpawnDelay: { min: 1000, max: 3000, description: 'Time between pipe spawns in ms' }
-      },
-      'endless-runner': {
-        speed: { min: 100, max: 500, description: 'Player running speed' },
-        jumpVelocity: { min: -600, max: -250, description: 'How high the player jumps' },
-        gravity: { min: 500, max: 2000, description: 'Gravity strength' },
-        spawnRate: { min: 1000, max: 4000, description: 'Time between obstacle spawns in ms' }
-      },
-      'whack-a-mole': {
-          spawnRate: { min: 300, max: 2000, description: 'How often moles appear in ms' },
-          moleUpTime: { min: 500, max: 2500, description: 'How long a mole stays visible in ms' }
-      },
-      'crossy-road': {
-          speed: {min: 50, max: 300, description: 'Base speed of cars'},
-          spawnRate: {min: 500, max: 3000, description: 'How often cars appear in ms'}
-      },
-      'match-3': {
-          gridSize: { min: 6, max: 10, description: 'The size of the grid (e.g., 8 means 8x8)'},
-      }
-    };
-
-    const constraints = parameterConstraints[gameType as keyof typeof parameterConstraints] || {};
-
     const systemPrompt = `You are a game parameter tuning assistant. Based on the user's request, adjust the game parameters within the given constraints. Return ONLY valid JSON with the updated parameters.
 
 Current parameters: ${JSON.stringify(currentParameters)}
 
-Constraints: ${JSON.stringify(constraints)}
+Constraints: ${JSON.stringify(parameterConfigs)}
 
 Rules:
 - Only modify parameters relevant to the user's request.
@@ -73,11 +44,11 @@ Rules:
 
     const validatedParameters: Record<string, number> = {};
     for (const key in parameters) {
-      if (Object.prototype.hasOwnProperty.call(parameters, key) && constraints[key]) {
+      if (Object.prototype.hasOwnProperty.call(parameters, key) && parameterConfigs[key]) {
         const value = Number(parameters[key]);
-        const constraint = constraints[key] as { min: number, max: number};
+        const constraint = parameterConfigs[key] as { min: number; max: number };
         if (!isNaN(value)) {
-            validatedParameters[key] = Math.max(constraint.min, Math.min(constraint.max, value));
+          validatedParameters[key] = Math.max(constraint.min, Math.min(constraint.max, value));
         }
       }
     }

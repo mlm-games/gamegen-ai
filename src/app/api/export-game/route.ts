@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     }
 
     const zip = new JSZip();
-    const gamePath = path.join(process.cwd(), 'public', 'games', template);
+    const gamePath = path.join(process.cwd(), 'game-templates', template);
 
     // Read the game files
     let gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
@@ -53,8 +53,8 @@ export async function POST(request: NextRequest) {
     if (modifiedConfig.assets.player) {
       if (modifiedConfig.assets.player.startsWith('http')) {
         modifiedConfig.assets.player = await fetchImageAsBase64(modifiedConfig.assets.player);
-      } else if (modifiedConfig.assets.player.startsWith('/')) {
-        const localPath = path.join(process.cwd(), 'public', modifiedConfig.assets.player);
+      } else if (modifiedConfig.assets.player.startsWith('/games/')) {
+        const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(modifiedConfig.assets.player));
         modifiedConfig.assets.player = await imageToBase64(localPath);
       }
     }
@@ -62,18 +62,19 @@ export async function POST(request: NextRequest) {
     if (modifiedConfig.assets.background) {
       if (modifiedConfig.assets.background.startsWith('http')) {
         modifiedConfig.assets.background = await fetchImageAsBase64(modifiedConfig.assets.background);
-      } else if (modifiedConfig.assets.background.startsWith('/')) {
-        const localPath = path.join(process.cwd(), 'public', modifiedConfig.assets.background);
+      } else if (modifiedConfig.assets.background.startsWith('/games/')) {
+        const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(modifiedConfig.assets.background));
         modifiedConfig.assets.background = await imageToBase64(localPath);
       }
     }
 
     if (modifiedConfig.assets.obstacles && Array.isArray(modifiedConfig.assets.obstacles)) {
       for (let i = 0; i < modifiedConfig.assets.obstacles.length; i++) {
-        if (modifiedConfig.assets.obstacles[i].startsWith('http')) {
-          modifiedConfig.assets.obstacles[i] = await fetchImageAsBase64(modifiedConfig.assets.obstacles[i]);
-        } else if (modifiedConfig.assets.obstacles[i].startsWith('/')) {
-          const localPath = path.join(process.cwd(), 'public', modifiedConfig.assets.obstacles[i]);
+        const assetPath = modifiedConfig.assets.obstacles[i];
+        if (assetPath.startsWith('http')) {
+          modifiedConfig.assets.obstacles[i] = await fetchImageAsBase64(assetPath);
+        } else if (assetPath.startsWith('/games/')) {
+          const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(assetPath));
           modifiedConfig.assets.obstacles[i] = await imageToBase64(localPath);
         }
       }
@@ -83,8 +84,8 @@ export async function POST(request: NextRequest) {
       for (let i = 0; i < modifiedConfig.assets.items.length; i++) {
         if (modifiedConfig.assets.items[i].startsWith('http')) {
           modifiedConfig.assets.items[i] = await fetchImageAsBase64(modifiedConfig.assets.items[i]);
-        } else if (modifiedConfig.assets.items[i].startsWith('/')) {
-          const localPath = path.join(process.cwd(), 'public', modifiedConfig.assets.items[i]);
+        } else if (modifiedConfig.assets.items[i].startsWith('/games/')) {
+          const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(modifiedConfig.assets.items[i]));
           modifiedConfig.assets.items[i] = await imageToBase64(localPath);
         }
       }

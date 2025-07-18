@@ -48,7 +48,7 @@ export default function Home() {
         {/* Header */}
         <div className="text-center mb-12">
           <h1 className="text-5xl font-bold text-gray-800 mb-4 flex items-center justify-center gap-3">
-            <Sparkles className="w-12 h-12 text-purple-600" />
+            <Sparkles className="w-12 h-12 text-primary" />
             GameGen AI
           </h1>
           <p className="text-xl text-gray-600">
@@ -65,11 +65,11 @@ export default function Home() {
                   onClick={() => handleStepClick(step.id as Step)}
                   disabled={!canProceed(step.id as Step)}
                   className={`
-                    flex items-center gap-2 px-4 py-2 rounded-full transition-all
-                    ${currentStep === step.id 
-                      ? 'bg-purple-600 text-white shadow-lg scale-105' 
+                    flex items-center gap-2 px-4 py-2 rounded-full transition-all 
+                    ${currentStep === step.id
+                      ? 'bg-primary text-primary-foreground shadow-lg scale-105'
                       : canProceed(step.id as Step)
-                        ? 'bg-white text-gray-700 hover:bg-gray-100 cursor-pointer'
+                        ? 'bg-card text-card-foreground hover:bg-muted cursor-pointer'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                     }
                   `}

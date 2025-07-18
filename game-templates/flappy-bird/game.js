@@ -71,13 +71,9 @@ class FlappyBirdGame extends Phaser.Scene {
     // Clear any existing game objects
     this.children.removeAll();
     
-    // Set background color first
-    this.cameras.main.setBackgroundColor('#87CEEB');
+    this.cameras.main.setBackgroundColor('#87CEEB'); // Default BG color
     
-    // Wait a frame to ensure textures are ready
-    this.time.delayedCall(100, () => {
-      this.setupGame();
-    });
+    this.setupGame();
   }
 
   setupGame() {
@@ -246,22 +242,25 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 }
 
-// Initialize the game
-window.addEventListener('load', () => {
-  const config = {
-    type: Phaser.AUTO,
-    width: 800,
-    height: 600,
-    parent: 'game-container',
-    physics: {
-      default: 'arcade',
-      arcade: {
-        gravity: { y: 0 },
-        debug: false
-      }
+const phaserGameConfig = {
+  type: Phaser.AUTO,
+  width: 800,
+  height: 600,
+  parent: 'game-container',
+  physics: {
+    default: 'arcade',
+    arcade: {
+      gravity: { y: 0 },
+      debug: false,
     },
-    scene: FlappyBirdGame
-  };
-  
-  new Phaser.Game(config);
-});
+  },
+  scene: FlappyBirdGame,
+};
+
+// This wrapper ensures the game instance is created only after the
+// config has been set on the window object.
+if (document.readyState === 'complete' || document.readyState === 'interactive') {
+  new Phaser.Game(phaserGameConfig);
+} else {
+  document.addEventListener('DOMContentLoaded', () => new Phaser.Game(phaserGameConfig));
+}

@@ -6,7 +6,7 @@ interface GameStore {
   selectedTemplate: GameTemplate | null;
   gameConfig: GameConfig | null;
   setSelectedTemplate: (template: GameTemplate) => void;
-  updateGameConfig: (config: Partial<GameConfig | { assets: Partial<GameConfig['assets']>, parameters: Partial<GameConfig['parameters']> }>) => void;
+  updateGameConfig: (configUpdate: Partial<GameConfig> & { assets?: Partial<GameConfig['assets']>; parameters?: Partial<GameConfig['parameters']> }) => void;
   resetStore: () => void;
 }
 

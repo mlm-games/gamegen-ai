@@ -8,8 +8,6 @@ import toast from 'react-hot-toast';
 export default function ExportManager() {
   const { selectedTemplate, gameConfig } = useGameStore();
   const [isExporting, setIsExporting] = useState(false);
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const [exportUrl, setExportUrl] = useState<string | null>(null);
 
   const handleExport = async () => {
     if (!selectedTemplate || !gameConfig) return;
@@ -29,8 +27,7 @@ export default function ExportManager() {
 
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
-      setExportUrl(url);
-      
+
       // Auto-download
       const a = document.createElement('a');
       a.href = url;
@@ -38,7 +35,7 @@ export default function ExportManager() {
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
+
       toast.success('Game exported successfully!');
     } catch (error) {
       toast.error('Failed to export game');
@@ -50,7 +47,7 @@ export default function ExportManager() {
 
   return (
     <div className="max-w-2xl mx-auto">
-      <div className="bg-white rounded-2xl shadow-xl p-8">
+      <div className="p-8 border rounded-2xl shadow-xl bg-card text-card-foreground">
         <div className="text-center mb-8">
           <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
           <h2 className="text-3xl font-bold text-gray-800 mb-2">
@@ -88,8 +85,8 @@ export default function ExportManager() {
             className={`
               w-full flex items-center justify-center gap-3 px-6 py-4 rounded-lg font-medium transition-all
               ${isExporting
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                : 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg'
+                ? 'bg-muted text-muted-foreground cursor-not-allowed'
+                : 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg'
               }
             `}
           >
@@ -119,7 +116,7 @@ export default function ExportManager() {
         </div>
 
         {/* Instructions */}
-        <div className="mt-8 pt-8 border-t border-gray-200">
+        <div className="pt-8 mt-8 border-t border-border">
           <h4 className="font-semibold text-gray-800 mb-3">How to use your game:</h4>
           <ol className="space-y-2 text-sm text-gray-600">
             <li>1. Extract the downloaded ZIP file</li>

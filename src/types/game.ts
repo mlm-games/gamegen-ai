@@ -38,4 +38,13 @@ export interface GameTemplate {
   thumbnail: string;
   description: string;
   defaultConfig: GameConfig;
+  assetTypes: ('player' | 'background' | 'obstacles' | 'items')[];
+  parameterConfigs: Record<string, ParameterConfig>;
+}
+
+export interface ParameterConfig {
+  label: string;
+  min: number;
+  max: number;
+  step: number;
 }

@@ -100,14 +100,8 @@ export async function POST(request: NextRequest) {
         }
     }
 
-    // CONVERT TO BASE64 FOR FRONTEND 
-    const base64Image = await fetchImageAsBase64(finalImageUrl);
-    if (!base64Image) {
-        throw new Error('Failed to convert final image to Base64');
-    }
-
     return NextResponse.json({ 
-      assetUrl: base64Image,
+      assetUrl: finalImageUrl,
       dimensions: dimensions 
     });
 
