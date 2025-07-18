@@ -8,7 +8,7 @@ class Match3Game extends Phaser.Scene {
     this.score = 0;
     this.gridSize = this.gameConfig.parameters.gridSize || 8;
     this.tileSize = 500 / this.gridSize;
-    this.gemTypes = 5;
+    this.gemTypes = 6;
 
     this.grid = [];
     this.gems = null;
@@ -67,6 +67,7 @@ class Match3Game extends Phaser.Scene {
     const startY = 300 - (this.gridSize * this.tileSize) / 2;
 
     for (let row = 0; row < this.gridSize; row++) {
+
       for (let col = 0; col < this.gridSize; col++) {
         let gemType;
         do {
@@ -82,6 +83,7 @@ class Match3Game extends Phaser.Scene {
   }
 
   addGem(row, col, type, startX, startY) {
+    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
     const gemAsset = this.textures.exists('gem' + type) ? 'gem' + type : 'gem-default' + type;
     const x = startX + col * this.tileSize + this.tileSize / 2;
     const y = startY + row * this.tileSize + this.tileSize / 2;
@@ -90,6 +92,7 @@ class Match3Game extends Phaser.Scene {
     gem.setInteractive();
     gem.type = type;
     gem.gridPos = { row, col };
+
     return gem;
   }
 
@@ -226,6 +229,7 @@ class Match3Game extends Phaser.Scene {
     // Add new gems from the top
     for (let row = 0; row < this.gridSize; row++) {
       for (let col = 0; col < this.gridSize; col++) {
+
         if (this.grid[row][col] === null) {
           const gemType = Phaser.Math.Between(0, this.gemTypes - 1);
           const gem = this.addGem(row, col, gemType, startX, startY);
@@ -270,6 +274,7 @@ window.addEventListener('load', () => {
     height: 600,
     parent: 'game-container',
     backgroundColor: '#2d3748',
+
     scene: [Match3Game]
   };
 

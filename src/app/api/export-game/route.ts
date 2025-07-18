@@ -28,6 +28,7 @@ async function fetchImageAsBase64(url: string): Promise<string> {
   }
 }
 
+
 export async function POST(request: NextRequest) {
   try {
     const { template, config } = await request.json();
@@ -36,15 +37,44 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Template and config are required' }, { status: 400 });
     }
 
-    const defaultAssetMap: Record<string, string[]> = {
-      'flappy-bird': ['bird', 'background', 'pipe'],
-      'endless-runner': ['player', 'background', 'obstacle', 'ground'],
-      'whack-a-mole': ['mole', 'hole', 'background', 'hammer'],
-      'match-3': ['background', 'gem-red', 'gem-blue', 'gem-green', 'gem-yellow', 'gem-purple', 'gem-orange'],
-      'crossy-road': ['chicken', 'background', 'car', 'road', 'grass'],
+    const defaultAssetMap: Record<string, Record<string, string>> = {
+      'flappy-bird': {
+        bird: 'bird',
+        background: 'background',
+        pipe: 'pipe'
+      },
+      'endless-runner': {
+        player: 'player',
+        background: 'background',
+        obstacle: 'obstacle',
+        ground: 'ground'
+      },
+      'whack-a-mole': {
+        mole: 'mole',
+        hole: 'hole',
+        background: 'background',
+        hammer: 'hammer'
+      },
+      'match-3': {
+        background: 'background',
+        red: 'gem-red',
+        blue: 'gem-blue',
+        green: 'gem-green',
+        yellow: 'gem-yellow',
+        purple: 'gem-purple',
+        orange: 'gem-orange'
+      },
+      'crossy-road': {
+        player: 'chicken',
+        background: 'background',
+        vehicle: 'car',
+        road: 'road',
+        grass: 'grass'
+      },
     };
 
-    if (!defaultAssetMap[template]) {
+    const assetMap = defaultAssetMap[template];
+    if (!assetMap) {
       return NextResponse.json({ error: 'Invalid template' }, { status: 400 });
     }
 
@@ -52,21 +82,24 @@ export async function POST(request: NextRequest) {
     const gamePath = path.join(process.cwd(), 'public', 'games', template);
 
     let gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
-
     // Load default assets as base64
     const defaultAssets: Record<string, string> = {};
-    const assetList = defaultAssetMap[template];
-    for (const key of assetList) {
-      const assetPath = path.join(process.cwd(), 'public', `games/${template}/assets/${key}.png`);
+    for (const key in assetMap) {
+
+      const filename = assetMap[key];
+      const assetPath = path.join(process.cwd(), 'public', `games/${template}/assets/${filename}.png`);
+      const base64 = await imageToBase64(assetPath);
       try {
-        defaultAssets[key] = await imageToBase64(assetPath);
+        if (base64) {
+          defaultAssets[key] = await imageToBase64(assetPath);
+        }
       } catch (e) {
         console.error(`Failed to load default asset ${key} for ${template}:`, e);
       }
     }
 
     // Special cases for external or unique assets
-    if (template === 'endless-runner') {
+    if (template === 'endless-runner' && !defaultAssets['particle']) {
       defaultAssets['particle'] = await fetchImageAsBase64('https://labs.phaser.io/assets/particles/white.png');
     }
 
@@ -135,7 +168,7 @@ export async function POST(request: NextRequest) {
     // Apply replacements to use embedded assets instead of paths
     let modifiedGameJs = gameJsContent;
 
-    // Flexible regex to match load.image with any quote type, template literals, and variables
+    // Flexible regex to match load.image with any quote type and string literals
     const assetPatterns = [
       // For default -default loads
       { pattern: /this\.load\.image\(\s*['"`]([^'"`]+)-default['"`]\s*,\s*['"`]([^'"`]+)['"`]\s*\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1-default', DEFAULT_ASSETS['$1']); }" },
@@ -154,6 +187,7 @@ export async function POST(request: NextRequest) {
       { pattern: /this\.load\.image\(\s*['"`]([^'"`]+)['"`]\s*,\s*['"`](https?:\/\/[^'"`]+)['"`]\s*\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1', DEFAULT_ASSETS['$1']); }" }
     ];
 
+
     assetPatterns.forEach(({ pattern, replacement }) => {
       modifiedGameJs = modifiedGameJs.replace(pattern, replacement as any);
     });
@@ -162,7 +196,7 @@ export async function POST(request: NextRequest) {
     if (template === 'whack-a-mole') {
       modifiedGameJs = modifiedGameJs.replace(
         /this\.input\.setDefaultCursor\(\s*['"`]url\(\/games\/whack-a-mole\/assets\/hammer\.png\),\s*pointer['"`]\s*\);/g,
-        "this.input.setDefaultCursor(`url(${DEFAULT_ASSETS['hammer']}), pointer`);"
+        "this.input.setDefaultCursor(`url(${DEFAULT_ASSETS['hammer'] || '/games/whack-a-mole/assets/hammer.png'}), pointer`);"
       );
     }
 
@@ -170,7 +204,7 @@ export async function POST(request: NextRequest) {
     const modifiedHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>${config.name}</title>
     <script src="https://cdn.jsdelivr.net/npm/phaser@3.70.0/dist/phaser.min.js"></script>
@@ -200,7 +234,7 @@ export async function POST(request: NextRequest) {
     zip.file('index.html', modifiedHtml);
     zip.file('game.js', modifiedGameJs);
     zip.file('config.json', JSON.stringify(modifiedConfig, null, 2));
-    zip.file('README.txt', `${config.name}
+    zip.file('README.txt', `${config.name || 'Your Game'}
     
 This game is fully self-contained. Just open index.html in any web browser to play!
 
