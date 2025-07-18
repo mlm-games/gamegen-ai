@@ -275,3 +275,39 @@ select:focus {
 .dark main.bg-gradient-to-br {
   background-image: linear-gradient(to bottom right, hsl(240 10% 10%), hsl(240 10% 5%));
 }
+
+.dark .bg-gray-50 {
+  background-color: hsl(var(--muted));
+}
+
+/* Dark mode text color overrides */
+.dark .text-gray-800 {
+  color: hsl(var(--foreground));
+}
+
+.dark .text-gray-700 {
+  color: hsl(0 0% 90%);
+}
+
+.dark .text-gray-600 {
+  color: hsl(0 0% 70%);
+}
+
+.dark .text-gray-500 {
+  color: hsl(0 0% 60%);
+}
+
+.dark .text-green-500 {
+  color: hsl(143 85% 96%);
+}
+
+/* Ensure card backgrounds are proper in dark mode */
+.dark .bg-white {
+  background-color: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+/* Border colors */
+.dark .border-gray-200 {
+  border-color: hsl(var(--border));
+}
