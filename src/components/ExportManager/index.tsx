@@ -30,15 +30,15 @@ export default function ExportManager() {
       const blob = await response.blob();
       const url = URL.createObjectURL(blob);
       setExportUrl(url);
-      
+
       // Auto-download
       const a = document.createElement('a');
       a.href = url;
-      a.download = `${gameConfig.name.toLowerCase().replace(/\s+/g, '-')}-game.zip`;
+      a.download = `${gameConfig.name.toLowerCase().replace(/\s+/g, '-')}-game.html`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
-      
+
       toast.success('Game exported successfully!');
     } catch (error) {
       toast.error('Failed to export game');
