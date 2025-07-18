@@ -9,8 +9,8 @@ export function useTheme() {
             setTheme(savedTheme);
             document.documentElement.classList.toggle('dark', savedTheme === 'dark');
         } else if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
-            setTheme('light');
-            document.documentElement.classList.add('light');
+            setTheme('dark');
+            document.documentElement.classList.add('dark');
         }
     }, []);
 

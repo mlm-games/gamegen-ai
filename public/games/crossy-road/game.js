@@ -35,6 +35,11 @@ class CrossyRoadGame extends Phaser.Scene {
   }
 
   create() {
+    // Delay setup to allow Base64 textures to load
+    this.time.delayedCall(100, this.setupGame, [], this);
+  }
+
+  setupGame() {
     const playerAsset = this.textures.exists('player') ? 'player' : 'player-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const vehicleAsset = this.textures.exists('vehicle') ? 'vehicle' : 'vehicle-default';
@@ -45,7 +50,7 @@ class CrossyRoadGame extends Phaser.Scene {
     for (let i = 0; i < 12; i++) {
       const y = 575 - i * 50;
       const isRoad = i > 0 && i < 11 && i % 2 !== 0;
-      
+
       if (isRoad) {
         this.add.tileSprite(400, y, 800, 50, 'road-default');
         this.lanes.push({ y: y, type: 'road', speed: Phaser.Math.Between(100, 200) * (Math.random() > 0.5 ? 1 : -1) });
@@ -68,9 +73,9 @@ class CrossyRoadGame extends Phaser.Scene {
       callbackScope: this,
       loop: true
     });
-    
-    this.scoreText = this.add.text(16, 16, 'Score: 0', { 
-      fontSize: '32px', 
+
+    this.scoreText = this.add.text(16, 16, 'Score: 0', {
+      fontSize: '32px',
       fill: '#fff',
       stroke: '#000',
       strokeThickness: 4
@@ -78,7 +83,7 @@ class CrossyRoadGame extends Phaser.Scene {
 
     this.cursors = this.input.keyboard.createCursorKeys();
     this.input.on('pointerdown', (pointer) => this.handleTouch(pointer));
-    
+
     this.physics.add.overlap(this.player, this.vehicles, () => this.gameOver(), null, this);
   }
 
@@ -95,7 +100,7 @@ class CrossyRoadGame extends Phaser.Scene {
         this.movePlayer(50, 0);
       }
     }
-    
+
     this.vehicles.children.entries.forEach(vehicle => {
       if (vehicle.x < -100 && vehicle.body.velocity.x < 0) {
         vehicle.destroy();
@@ -107,10 +112,10 @@ class CrossyRoadGame extends Phaser.Scene {
 
   handleTouch(pointer) {
     if (!this.canMove) return;
-    
+
     const dx = pointer.x - this.player.x;
     const dy = pointer.y - this.player.y;
-    
+
     if (Math.abs(dx) > Math.abs(dy)) {
       if (Math.abs(dx) > 25) this.movePlayer(dx > 0 ? 50 : -50, 0);
     } else {
@@ -120,20 +125,20 @@ class CrossyRoadGame extends Phaser.Scene {
 
   movePlayer(dx, dy) {
     this.canMove = false;
-    
+
     const newX = this.player.x + dx;
     const newY = this.player.y + dy;
-    
+
     if (newY < 25) { // Win condition
-        this.winGame();
-        return;
+      this.winGame();
+      return;
     }
-    
+
     if (dy < 0) {
       this.score++;
       this.scoreText.setText('Score: ' + this.score);
     }
-    
+
     this.tweens.add({
       targets: this.player,
       x: newX,
@@ -149,66 +154,63 @@ class CrossyRoadGame extends Phaser.Scene {
   spawnVehicle(vehicleAsset) {
     const roadLanes = this.lanes.filter(lane => lane.type === 'road');
     if (roadLanes.length === 0) return;
-    
+
     const lane = Phaser.Utils.Array.GetRandom(roadLanes);
     const speed = lane.speed || (this.gameConfig.parameters.speed || 150) * (Math.random() > 0.5 ? 1 : -1);
     const side = speed > 0 ? -50 : 850;
-    
+
     const vehicle = this.vehicles.create(side, lane.y, vehicleAsset);
     vehicle.setVelocityX(speed);
-    
+
     if (speed < 0) {
       vehicle.setFlipX(true);
     }
   }
-  
+
   showEndMessage(message) {
-      this.canMove = false;
-      this.physics.pause();
-      
-      this.add.text(400, 300, message, {
-          fontSize: '48px',
-          fill: '#fff',
-          stroke: '#000',
-          strokeThickness: 6,
-          align: 'center'
-      }).setOrigin(0.5);
-      
-      this.time.delayedCall(2000, () => {
-          this.scene.restart();
-      });
+    this.canMove = false;
+    this.physics.pause();
+
+    this.add.text(400, 300, message, {
+      fontSize: '48px',
+      fill: '#fff',
+      stroke: '#000',
+      strokeThickness: 6,
+      align: 'center'
+    }).setOrigin(0.5);
+
+    this.time.delayedCall(2000, () => {
+      this.scene.restart();
+    });
   }
 
   gameOver() {
-      if (!this.canMove) return;
-      this.showEndMessage('Game Over!\nScore: ' + this.score);
+    if (!this.canMove) return;
+    this.showEndMessage('Game Over!\nScore: ' + this.score);
   }
 
   winGame() {
-      if (!this.canMove) return;
-      this.score += 100; // Bonus for winning
-      this.showEndMessage('You Made It!\nScore: ' + this.score);
+    if (!this.canMove) return;
+    this.score += 100; // Bonus for winning
+    this.showEndMessage('You Made It!\nScore: ' + this.score);
   }
 }
 
-const phaserGameConfig = {
+// Initialize the game
+window.addEventListener('load', () => {
+  const config = {
     type: Phaser.AUTO,
     width: 800,
     height: 600,
     parent: 'game-container',
     physics: {
-        default: 'arcade',
-        arcade: {
-            debug: false
-        }
+      default: 'arcade',
+      arcade: {
+        debug: false
+      }
     },
     scene: [CrossyRoadGame]
-};
+  };
 
-// This wrapper ensures the game instance is created only after the
-// config has been set on the window object.
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-    new Phaser.Game(phaserGameConfig);
-} else {
-    document.addEventListener('DOMContentLoaded', () => new Phaser.Game(phaserGameConfig));
-}
+  new Phaser.Game(config);
+});

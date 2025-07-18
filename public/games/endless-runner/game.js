@@ -41,6 +41,11 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 
   create() {
+    // Delay setup to allow Base64 textures to load
+    this.time.delayedCall(100, this.setupGame, [], this);
+  }
+
+  setupGame() {
     const playerAsset = this.textures.exists('player') ? 'player' : 'player-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const obstacleAsset = this.textures.exists('obstacle') ? 'obstacle' : 'obstacle-default';
@@ -161,28 +166,26 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 }
 
-const phaserGameConfig = {
-  type: Phaser.AUTO,
-  width: 800,
-  height: 600,
-  parent: 'game-container',
-  physics: {
-    default: 'arcade',
-    arcade: {
-      gravity: { y: 300 },
-      debug: false
+// Initialize the game
+window.addEventListener('load', () => {
+  const config = {
+    type: Phaser.AUTO,
+    width: 800,
+    height: 600,
+    parent: 'game-container',
+    physics: {
+      default: 'arcade',
+      arcade: {
+        gravity: { y: 300 },
+        debug: false
+      }
+    },
+    scene: EndlessRunnerGame,
+    scale: {
+      mode: Phaser.Scale.RESIZE,
+      autoCenter: Phaser.Scale.CENTER_BOTH
     }
-  },
-  scene: EndlessRunnerGame,
-  // New: Scale for responsiveness
-  scale: {
-    mode: Phaser.Scale.RESIZE,
-    autoCenter: Phaser.Scale.CENTER_BOTH
-  }
-};
+  };
 
-if (document.readyState === 'complete' || document.readyState === 'interactive') {
-  new Phaser.Game(phaserGameConfig);
-} else {
-  document.addEventListener('DOMContentLoaded', () => new Phaser.Game(phaserGameConfig));
-}
+  new Phaser.Game(config);
+});

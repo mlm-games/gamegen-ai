@@ -32,14 +32,43 @@ export async function POST(request: NextRequest) {
   try {
     const { template, config } = await request.json();
 
-    // ... validation ...
+    if (!template || !config) {
+      return NextResponse.json({ error: 'Template and config are required' }, { status: 400 });
+    }
+
+    const defaultAssetMap: Record<string, string[]> = {
+      'flappy-bird': ['bird', 'background', 'pipe'],
+      'endless-runner': ['player', 'background', 'obstacle', 'ground'],
+      'whack-a-mole': ['mole', 'hole', 'background', 'hammer'],
+      'match-3': ['background', 'gem-red', 'gem-blue', 'gem-green', 'gem-yellow', 'gem-purple', 'gem-orange'],
+      'crossy-road': ['chicken', 'background', 'car', 'road', 'grass'],
+    };
+
+    if (!defaultAssetMap[template]) {
+      return NextResponse.json({ error: 'Invalid template' }, { status: 400 });
+    }
 
     const zip = new JSZip();
     const gamePath = path.join(process.cwd(), 'public', 'games', template);
 
-    // Read game files
     let gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
-    const indexHtml = await fs.readFile(path.join(gamePath, 'index.html'), 'utf-8');
+
+    // Load default assets as base64
+    const defaultAssets: Record<string, string> = {};
+    const assetList = defaultAssetMap[template];
+    for (const key of assetList) {
+      const assetPath = path.join(process.cwd(), 'public', `games/${template}/assets/${key}.png`);
+      try {
+        defaultAssets[key] = await imageToBase64(assetPath);
+      } catch (e) {
+        console.error(`Failed to load default asset ${key} for ${template}:`, e);
+      }
+    }
+
+    // Special cases for external or unique assets
+    if (template === 'endless-runner') {
+      defaultAssets['particle'] = await fetchImageAsBase64('https://labs.phaser.io/assets/particles/white.png');
+    }
 
     // Create modified config with base64 assets
     const modifiedConfig = JSON.parse(JSON.stringify(config));
@@ -67,57 +96,78 @@ export async function POST(request: NextRequest) {
     // Handle obstacles
     if (modifiedConfig.assets.obstacles && Array.isArray(modifiedConfig.assets.obstacles)) {
       for (let i = 0; i < modifiedConfig.assets.obstacles.length; i++) {
-        if (modifiedConfig.assets.obstacles[i].startsWith('http')) {
-          modifiedConfig.assets.obstacles[i] = await fetchImageAsBase64(modifiedConfig.assets.obstacles[i]);
-        } else if (modifiedConfig.assets.obstacles[i].startsWith('/')) {
-          const localPath = path.join(process.cwd(), 'public', modifiedConfig.assets.obstacles[i]);
-          modifiedConfig.assets.obstacles[i] = await imageToBase64(localPath);
+        let obs = modifiedConfig.assets.obstacles[i];
+        if (obs.startsWith('http')) {
+          obs = await fetchImageAsBase64(obs);
+        } else if (obs.startsWith('/')) {
+          const localPath = path.join(process.cwd(), 'public', obs);
+          obs = await imageToBase64(localPath);
         }
+        modifiedConfig.assets.obstacles[i] = obs;
       }
     }
 
     // Handle items
     if (modifiedConfig.assets.items && Array.isArray(modifiedConfig.assets.items)) {
       for (let i = 0; i < modifiedConfig.assets.items.length; i++) {
-        if (modifiedConfig.assets.items[i].startsWith('http')) {
-          modifiedConfig.assets.items[i] = await fetchImageAsBase64(modifiedConfig.assets.items[i]);
-        } else if (modifiedConfig.assets.items[i].startsWith('/')) {
-          const localPath = path.join(process.cwd(), 'public', modifiedConfig.assets.items[i]);
-          modifiedConfig.assets.items[i] = await imageToBase64(localPath);
+        let item = modifiedConfig.assets.items[i];
+        if (item.startsWith('http')) {
+          item = await fetchImageAsBase64(item);
+        } else if (item.startsWith('/')) {
+          const localPath = path.join(process.cwd(), 'public', item);
+          item = await imageToBase64(localPath);
         }
+        modifiedConfig.assets.items[i] = item;
       }
     }
 
-  } catch (e) {
-    console.log('No default assets folder found');
-  }
+    // Create a self-contained game.js with embedded assets
+    let gameJsContent = `
+    // Embedded default assets
+    const DEFAULT_ASSETS = ${JSON.stringify(defaultAssets, null, 2)};
 
-  // Create a self-contained game.js with embedded assets
-  const gameJsContent = `
-// Embedded default assets
-const DEFAULT_ASSETS = ${JSON.stringify(defaultAssets, null, 2)};
+    // Embedded game configuration
+    window.GAME_CONFIG = ${JSON.stringify(modifiedConfig, null, 2)};
 
-// Embedded game configuration
-window.GAME_CONFIG = ${JSON.stringify(modifiedConfig, null, 2)};
+    ${gameJs}
+    `;
 
-${gameJs}
-`;
+    // Apply replacements to use embedded assets instead of paths
+    let modifiedGameJs = gameJsContent;
 
-  // Update all default asset loading to use embedded assets
-  let modifiedGameJs = gameJsContent;
+    // Flexible regex to match load.image with any quote type, template literals, and variables
+    const assetPatterns = [
+      // For default -default loads
+      { pattern: /this\.load\.image\(\s*['"`]([^'"`]+)-default['"`]\s*,\s*['"`]([^'"`]+)['"`]\s*\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1-default', DEFAULT_ASSETS['$1']); }" },
+      // For path-based loads, including template literals like `/games/.../gem-${color}.png`
+      {
+        pattern: /this\.load\.image\(\s*['"`]([^'"`]+)['"`]\s*,\s*(?:`([^`]+)`|'([^']+)'|"([^"]+)")\s*\);/g, replacement: (match: any, key: any, pathBacktick: any, pathSingle: any, pathDouble: any) => {
+          const assetPath = pathBacktick || pathSingle || pathDouble;
+          // Extract the base asset name (e.g., 'gem-red' from 'gem-${color}')
+          const assetNameMatch = assetPath.match(/assets\/(gem-)?([^\/.]+)(?:\$\{[^}]+\})?\.png/);
+          const assetName = assetNameMatch ? assetNameMatch[2] : key;
+          console.log(`Replacing load for key '${key}' with asset '${assetName}'`); // Debug log
+          return `if (DEFAULT_ASSETS['${assetName}']) { this.textures.addBase64('${key}', DEFAULT_ASSETS['${assetName}']); }`;
+        }
+      },
+      // For external URLs like particles
+      { pattern: /this\.load\.image\(\s*['"`]([^'"`]+)['"`]\s*,\s*['"`](https?:\/\/[^'"`]+)['"`]\s*\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1', DEFAULT_ASSETS['$1']); }" }
+    ];
 
-  // Replace all default asset loading patterns
-  const assetPatterns = [
-    { pattern: /this\.load\.image\('([^']+)-default',\s*'[^']+'\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1-default', DEFAULT_ASSETS['$1']); }" },
-    { pattern: /this\.load\.image\('([^']+)',\s*'\/games\/[^\/]+\/assets\/([^']+)\.png'\);/g, replacement: "if (DEFAULT_ASSETS['$2']) { this.textures.addBase64('$1', DEFAULT_ASSETS['$2']); }" }
-  ];
+    assetPatterns.forEach(({ pattern, replacement }) => {
+      modifiedGameJs = modifiedGameJs.replace(pattern, replacement as any);
+    });
 
-  assetPatterns.forEach(({ pattern, replacement }) => {
-    modifiedGameJs = modifiedGameJs.replace(pattern, replacement);
-  });
+    // Special replacement for cursor in whack-a-mole
+    if (template === 'whack-a-mole') {
+      modifiedGameJs = modifiedGameJs.replace(
+        /this\.input\.setDefaultCursor\(\s*['"`]url\(\/games\/whack-a-mole\/assets\/hammer\.png\),\s*pointer['"`]\s*\);/g,
+        "this.input.setDefaultCursor(`url(${DEFAULT_ASSETS['hammer']}), pointer`);"
+      );
+    }
 
-  // Create a minimal HTML file
-  const modifiedHtml = `<!DOCTYPE html>
+    // Create a minimal HTML file
+    const modifiedHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -146,30 +196,30 @@ ${gameJs}
 </body>
 </html>`;
 
-  // Add files to zip
-  zip.file('index.html', modifiedHtml);
-  zip.file('game.js', modifiedGameJs);
-  zip.file('config.json', JSON.stringify(modifiedConfig, null, 2));
-  zip.file('README.txt', `${config.name}
+    // Add files to zip
+    zip.file('index.html', modifiedHtml);
+    zip.file('game.js', modifiedGameJs);
+    zip.file('config.json', JSON.stringify(modifiedConfig, null, 2));
+    zip.file('README.txt', `${config.name}
     
 This game is fully self-contained. Just open index.html in any web browser to play!
 
 Game created with GameGen AI - No coding required!`);
 
-  // Generate the zip
-  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+    // Generate the zip
+    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
-  return new NextResponse(zipBuffer, {
-    headers: {
-      'Content-Type': 'application/zip',
-      'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`
-    }
-  });
-} catch (error) {
-  console.error('Export error:', error);
-  return NextResponse.json(
-    { error: 'Failed to export game: ' + (error as Error).message },
-    { status: 500 }
-  );
-}
+    return new NextResponse(zipBuffer, {
+      headers: {
+        'Content-Type': 'application/zip',
+        'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`
+      }
+    });
+  } catch (error) {
+    console.error('Export error:', error);
+    return NextResponse.json(
+      { error: 'Failed to export game: ' + (error as Error).message },
+      { status: 500 }
+    );
+  }
 }

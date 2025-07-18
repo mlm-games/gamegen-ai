@@ -11,12 +11,12 @@ class FlappyBirdGame extends Phaser.Scene {
 
   preload() {
     console.log('Preloading with config:', this.gameConfig);
-    
+
     // Clear any existing textures to avoid conflicts
     if (this.textures.exists('bird')) this.textures.remove('bird');
     if (this.textures.exists('background')) this.textures.remove('background');
     if (this.textures.exists('pipe')) this.textures.remove('pipe');
-    
+
     // Load custom assets if provided
     if (this.gameConfig.assets && this.gameConfig.assets.player) {
       const playerAsset = this.gameConfig.assets.player;
@@ -30,7 +30,7 @@ class FlappyBirdGame extends Phaser.Scene {
         this.load.image('bird', playerAsset);
       }
     }
-    
+
     if (this.gameConfig.assets && this.gameConfig.assets.background) {
       const bgAsset = this.gameConfig.assets.background;
       console.log('Loading custom background');
@@ -42,7 +42,7 @@ class FlappyBirdGame extends Phaser.Scene {
         this.load.image('background', bgAsset);
       }
     }
-    
+
     if (this.gameConfig.assets && this.gameConfig.assets.obstacles && Array.isArray(this.gameConfig.assets.obstacles) && this.gameConfig.assets.obstacles[0]) {
       const pipeAsset = this.gameConfig.assets.obstacles[0];
       console.log('Loading custom pipe');
@@ -54,7 +54,7 @@ class FlappyBirdGame extends Phaser.Scene {
         this.load.image('pipe', pipeAsset);
       }
     }
-    
+
     // Load default assets as fallback - check if they exist first
     if (!this.textures.exists('bird-default')) {
       this.load.image('bird-default', '/games/flappy-bird/assets/bird.png');
@@ -70,10 +70,10 @@ class FlappyBirdGame extends Phaser.Scene {
   create() {
     // Clear any existing game objects
     this.children.removeAll();
-    
+
     // Set background color first
     this.cameras.main.setBackgroundColor('#87CEEB');
-    
+
     // Wait a frame to ensure textures are ready
     this.time.delayedCall(100, () => {
       this.setupGame();
@@ -85,40 +85,40 @@ class FlappyBirdGame extends Phaser.Scene {
     const birdAsset = this.textures.exists('bird') ? 'bird' : 'bird-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const pipeAsset = this.textures.exists('pipe') ? 'pipe' : 'pipe-default';
-    
+
     console.log('Using assets:', { bird: birdAsset, background: bgAsset, pipe: pipeAsset });
-    
+
     // Background
     const bg = this.add.image(400, 300, bgAsset);
     bg.setDisplaySize(800, 600);
-    
+
     // Bird with adjusted collision box
     this.bird = this.physics.add.sprite(100, 300, birdAsset);
     this.bird.setGravityY(this.gameConfig.parameters?.gravity || 800);
     this.bird.setCollideWorldBounds(true);
-    
+
     // Calculate proper scale to fit game dimensions
     const targetHeight = 40; // Target height in pixels
     const birdTexture = this.textures.get(birdAsset);
     const birdFrame = birdTexture.get(0);
     const scale = targetHeight / birdFrame.height;
-    
+
     this.bird.setScale(scale);
-    
-    // Adjust collision box to match visual size
+
+    // Adjust collision box to help with fun
     const birdWidth = birdFrame.width * scale;
     const birdHeight = birdFrame.height * scale;
-    this.bird.body.setSize(birdWidth * 0.8, birdHeight * 0.8);
-    
+    this.bird.body.setSize(birdWidth * 0.5, birdHeight * 0.5);
+
     // Debug: Show collision boxes
     // this.physics.world.createDebugGraphic();
-    
+
     // Pipes
     this.pipes = this.physics.add.group();
-    
+
     // Store pipe asset for spawning
     this.pipeAsset = pipeAsset;
-    
+
     // Spawn pipes timer
     this.pipeTimer = this.time.addEvent({
       delay: this.gameConfig.parameters?.pipeSpawnDelay || 1500,
@@ -126,37 +126,37 @@ class FlappyBirdGame extends Phaser.Scene {
       callbackScope: this,
       loop: true
     });
-    
+
     // Score text
-    this.scoreText = this.add.text(16, 16, 'Score: 0', { 
-      fontSize: '32px', 
+    this.scoreText = this.add.text(16, 16, 'Score: 0', {
+      fontSize: '32px',
       fill: '#fff',
       stroke: '#000',
       strokeThickness: 4
     });
-    
+
     // Controls
     this.input.on('pointerdown', () => this.jump());
     if (this.input.keyboard) {
       this.input.keyboard.on('keydown-SPACE', () => this.jump());
     }
-    
+
     // Collisions
     this.physics.add.collider(this.bird, this.pipes, () => this.gameOver());
   }
 
   update() {
     if (!this.bird || !this.bird.body) return;
-    
+
     // Rotate bird based on velocity
     const velocity = this.bird.body.velocity.y;
     this.bird.angle = Phaser.Math.Clamp(velocity * 0.1, -30, 90);
-    
+
     // Check if bird is out of bounds
     if (this.bird.y < 0 || this.bird.y > 600) {
       this.gameOver();
     }
-    
+
     // Remove pipes that have gone off screen
     this.pipes.children.entries.forEach(pipe => {
       if (pipe.x < -100) {
@@ -185,18 +185,18 @@ class FlappyBirdGame extends Phaser.Scene {
     const pipeTop = Phaser.Math.Between(100, 400 - gap);
     const pipeScaleX = 0.5;
     const pipeScaleY = 1;
-    
+
     // Top pipe
     const topPipe = this.pipes.create(850, pipeTop, this.pipeAsset);
     topPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     topPipe.setOrigin(0.5, 1);
     topPipe.setImmovable(true);
-    
+
     topPipe.setScale(pipeScaleX, pipeScaleY);
-    
+
     const pipeWidth = topPipe.width * pipeScaleX;
     topPipe.body.setSize(pipeWidth * 0.8, topPipe.height * 0.5); // 80% width for more forgiving gameplay
-    
+
     // Bottom pipe
     const bottomPipe = this.pipes.create(850, pipeTop + gap, this.pipeAsset);
     bottomPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
@@ -204,7 +204,7 @@ class FlappyBirdGame extends Phaser.Scene {
     bottomPipe.setFlipY(true);
     bottomPipe.setScale(pipeScaleX, pipeScaleY);
     bottomPipe.setImmovable(true);
-    
+
     bottomPipe.body.setSize(pipeWidth * 0.8, bottomPipe.height * 0.5);
     bottomPipe.body.setOffset(pipeWidth * 0.1, 0);
   }
@@ -215,30 +215,30 @@ class FlappyBirdGame extends Phaser.Scene {
     if (this.pipeTimer) {
       this.pipeTimer.remove();
     }
-    
+
     this.bird.setTint(0xff0000);
-    
+
     const gameOverText = this.add.text(400, 250, 'Game Over!', {
       fontSize: '64px',
       color: '#fff',
       stroke: '#000',
       strokeThickness: 8
     }).setOrigin(0.5);
-    
+
     const finalScoreText = this.add.text(400, 320, 'Score: ' + this.score, {
       fontSize: '32px',
       color: '#fff',
       stroke: '#000',
       strokeThickness: 4
     }).setOrigin(0.5);
-    
+
     const restartText = this.add.text(400, 380, 'Click to restart', {
       fontSize: '24px',
       color: '#fff',
       stroke: '#000',
       strokeThickness: 3
     }).setOrigin(0.5);
-    
+
     // Restart on click
     this.input.once('pointerdown', () => {
       this.scene.restart();
@@ -262,6 +262,6 @@ window.addEventListener('load', () => {
     },
     scene: FlappyBirdGame
   };
-  
+
   new Phaser.Game(config);
 });
