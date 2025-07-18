@@ -23,12 +23,12 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
   }, [config]);
 
   return (
-    <div className="flex flex-col h-full">
+    <div className="aspect-preview">
       <iframe
         ref={iframeRef}
         key={key}
         src={`/api/game-preview/${gameTemplate}`}
-        className="flex-grow w-full border-0 rounded-lg bg-gray-100"
+        className="w-full border-0 rounded-lg bg-gray-100"
         title="Game Preview"
         onLoad={() => onGameReady?.()}
       />
