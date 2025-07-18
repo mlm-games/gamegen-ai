@@ -27,12 +27,12 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
       <iframe
         ref={iframeRef}
         key={key}
-        src={`/games/${gameTemplate}/index.html`}
+        src={`/api/game-preview/${gameTemplate}`}
         className="flex-grow w-full border-0 rounded-lg bg-gray-100"
         title="Game Preview"
         onLoad={() => onGameReady?.()}
       />
-      <div className="h-4"></div> {/* Add some space below iframe */}
+      <div className="h-4"></div>
     </div>
   );
 }

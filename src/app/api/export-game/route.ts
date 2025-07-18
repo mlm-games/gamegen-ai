@@ -32,14 +32,18 @@ export async function POST(request: NextRequest) {
   try {
     const { template, config } = await request.json();
 
-    // ... validation ...
+    if (!template || !config) {
+      return NextResponse.json(
+        { error: 'Template and config are required' },
+        { status: 400 }
+      );
+    }
 
     const zip = new JSZip();
     const gamePath = path.join(process.cwd(), 'game-templates', template);
 
     // Read game files
     let gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
-    const indexHtml = await fs.readFile(path.join(gamePath, 'index.html'), 'utf-8');
 
     // Create modified config with base64 assets
     const modifiedConfig = JSON.parse(JSON.stringify(config));
@@ -49,6 +53,7 @@ export async function POST(request: NextRequest) {
       if (modifiedConfig.assets.player.startsWith('http')) {
         modifiedConfig.assets.player = await fetchImageAsBase64(modifiedConfig.assets.player);
       } else if (modifiedConfig.assets.player.startsWith('/games/')) {
+        // These are served from public/games/ for the preview
         const assetPath = modifiedConfig.assets.player.replace('/games/', '');
         const localPath = path.join(process.cwd(), 'public', 'games', assetPath);
         modifiedConfig.assets.player = await imageToBase64(localPath);
@@ -94,8 +99,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Load default assets from public/games/[template]/assets for embedding
+    const defaultAssets: Record<string, string> = {};
+    try {
+      const publicAssetsPath = path.join(process.cwd(), 'public', 'games', template, 'assets');
+      const assetFiles = await fs.readdir(publicAssetsPath);
+      
+      for (const file of assetFiles) {
+        if (file.endsWith('.png') || file.endsWith('.jpg')) {
+          const assetName = file.replace(/\.(png|jpg)$/, '');
+          const assetPath = path.join(publicAssetsPath, file);
+          defaultAssets[assetName] = await imageToBase64(assetPath);
+        }
+      }
     } catch (e) {
-      console.log('No default assets folder found');
+      console.log('No default assets found in public folder');
     }
 
     // Create a self-contained game.js with embedded assets
