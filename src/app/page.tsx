@@ -6,13 +6,15 @@ import AICustomizer from '@/components/AICustomizer';
 import ParameterControls from '@/components/ParameterControls';
 import ExportManager from '@/components/ExportManager';
 import { useGameStore } from '@/lib/store';
-import { ChevronRight, Sparkles } from 'lucide-react';
+import { useTheme } from '@/lib/useTheme';
+import { ChevronRight, Moon, Sparkles, Sun } from 'lucide-react';
 
 type Step = 'select' | 'reskin' | 'parameters' | 'export';
 
 export default function Home() {
   const [currentStep, setCurrentStep] = useState<Step>('select');
   const { selectedTemplate, gameConfig } = useGameStore();
+  const { theme, toggleTheme } = useTheme();
 
   const steps = [
     { id: 'select', label: 'Select Template', icon: '🎮' },
@@ -54,6 +56,20 @@ export default function Home() {
           <p className="text-xl text-gray-600">
             Create custom games with AI - No coding required!
           </p>
+          <div className="absolute top-0 right-0 flex items-center gap-2">
+            <label className="relative inline-flex items-center cursor-pointer" aria-label="Toggle dark mode">
+              <input
+                type="checkbox"
+                checked={theme === 'dark'}
+                onChange={toggleTheme}
+                className="sr-only peer"
+              />
+              <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 dark:peer-focus:ring-purple-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-purple-600"></div>
+              <span className="ml-3 text-sm font-medium text-gray-900 dark:text-gray-300 flex items-center gap-1">
+                {theme === 'light' ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+              </span>
+            </label>
+          </div>
         </div>
 
         {/* Progress Steps */}
@@ -66,8 +82,8 @@ export default function Home() {
                   disabled={!canProceed(step.id as Step)}
                   className={`
                     flex items-center gap-2 px-4 py-2 rounded-full transition-all
-                    ${currentStep === step.id 
-                      ? 'bg-purple-600 text-white shadow-lg scale-105' 
+                    ${currentStep === step.id
+                      ? 'bg-purple-600 text-white shadow-lg scale-105'
                       : canProceed(step.id as Step)
                         ? 'bg-white text-gray-700 hover:bg-gray-100 cursor-pointer'
                         : 'bg-gray-200 text-gray-400 cursor-not-allowed'

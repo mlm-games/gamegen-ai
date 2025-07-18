@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useGameStore } from '@/lib/store';
-import { Wand2, Loader2, ArrowRight, RefreshCw } from 'lucide-react';
+import { Wand2, Loader2, ArrowRight } from 'lucide-react';
 import GameCanvas from '@/components/GameCanvas';
 import toast from 'react-hot-toast';
 
@@ -124,7 +124,7 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
   const anyGenerating = Object.values(isGenerating).some(s => s);
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 animate-fade-in">
       {/* Left Panel - AI Controls */}
       <div className="bg-white rounded-2xl shadow-xl p-8 space-y-6">
         <h2 className="text-3xl font-bold text-gray-800">

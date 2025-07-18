@@ -139,23 +139,23 @@ export default function GameSelector({ onNext }: GameSelectorProps) {
       <h2 className="text-3xl font-bold text-gray-800 mb-6">
         Choose Your Game Template
       </h2>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8 animate-fade-in">
         {gameTemplates.map((template) => (
           <div
             key={template.id}
             onClick={() => handleSelectTemplate(template)}
             className={`
               relative rounded-xl overflow-hidden cursor-pointer transition-all duration-200 border-2
-              ${selectedTemplate?.id === template.id 
-                ? 'ring-4 ring-purple-500 border-purple-500 shadow-lg scale-105' 
-                : 'border-gray-200 hover:shadow-md hover:scale-102 hover:border-purple-400'
+              ${selectedTemplate?.id === template.id
+                ? 'ring-4 ring-purple-500 border-purple-500 shadow-lg scale-105'
+                : 'border-gray-200 hover:shadow-md hover:scale-105 hover:border-purple-400 transition-transform'
               }
             `}
           >
             <div className="aspect-video relative">
-                <Image src={template.thumbnail} alt={template.name} layout="fill" objectFit="cover" className="bg-gray-200" />
-            </div>  
+              <Image src={template.thumbnail} alt={template.name} layout="fill" objectFit="cover" loading="lazy" className="bg-gray-200" />
+            </div>
             <div className="p-4 bg-white">
               <h3 className="font-bold text-lg text-gray-800">{template.name}</h3>
               <p className="text-sm text-gray-600 mt-1">{template.description}</p>
@@ -175,8 +175,8 @@ export default function GameSelector({ onNext }: GameSelectorProps) {
           disabled={!selectedTemplate}
           className={`
             flex items-center gap-2 px-6 py-3 rounded-lg font-medium transition-all
-            ${selectedTemplate 
-              ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg' 
+            ${selectedTemplate
+              ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-lg'
               : 'bg-gray-300 text-gray-500 cursor-not-allowed'
             }
           `}

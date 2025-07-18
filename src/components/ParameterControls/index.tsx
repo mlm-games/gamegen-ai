@@ -11,29 +11,29 @@ interface ParameterControlsProps {
 }
 
 const PARAMETER_CONFIGS = {
-    'flappy-bird': [
-        { key: 'gravity', label: 'Gravity', min: 200, max: 1500, step: 50 },
-        { key: 'jumpVelocity', label: 'Jump Power', min: -500, max: -200, step: 25 },
-        { key: 'pipeSpeed', label: 'Pipe Speed', min: 100, max: 400, step: 25 },
-        { key: 'gapSize', label: 'Gap Size', min: 100, max: 250, step: 10 },
-    ],
-    'endless-runner': [
-        { key: 'speed', label: 'Run Speed', min: 100, max: 500, step: 10 },
-        { key: 'jumpVelocity', label: 'Jump Power', min: -600, max: -250, step: 25 },
-        { key: 'gravity', label: 'Gravity', min: 500, max: 2000, step: 100 },
-        { key: 'spawnRate', label: 'Obstacle Rate (ms)', min: 1000, max: 4000, step: 100 },
-    ],
-    'whack-a-mole': [
-        { key: 'spawnRate', label: 'Appear Rate (ms)', min: 300, max: 2000, step: 50 },
-        { key: 'moleUpTime', label: 'Visible Time (ms)', min: 500, max: 2500, step: 50 },
-    ],
-    'crossy-road': [
-        { key: 'speed', label: 'Vehicle Speed', min: 50, max: 300, step: 10 },
-        { key: 'spawnRate', label: 'Vehicle Rate (ms)', min: 500, max: 3000, step: 100 },
-    ],
-    'match-3': [
-        { key: 'gridSize', label: 'Grid Size', min: 6, max: 10, step: 1 },
-    ]
+  'flappy-bird': [
+    { key: 'gravity', label: 'Gravity', min: 200, max: 1500, step: 50 },
+    { key: 'jumpVelocity', label: 'Jump Power', min: -500, max: -200, step: 25 },
+    { key: 'pipeSpeed', label: 'Pipe Speed', min: 100, max: 400, step: 25 },
+    { key: 'gapSize', label: 'Gap Size', min: 100, max: 250, step: 10 },
+  ],
+  'endless-runner': [
+    { key: 'speed', label: 'Run Speed', min: 100, max: 500, step: 10 },
+    { key: 'jumpVelocity', label: 'Jump Power', min: -600, max: -250, step: 25 },
+    { key: 'gravity', label: 'Gravity', min: 500, max: 2000, step: 100 },
+    { key: 'spawnRate', label: 'Obstacle Rate (ms)', min: 1000, max: 4000, step: 100 },
+  ],
+  'whack-a-mole': [
+    { key: 'spawnRate', label: 'Appear Rate (ms)', min: 300, max: 2000, step: 50 },
+    { key: 'moleUpTime', label: 'Visible Time (ms)', min: 500, max: 2500, step: 50 },
+  ],
+  'crossy-road': [
+    { key: 'speed', label: 'Vehicle Speed', min: 50, max: 300, step: 10 },
+    { key: 'spawnRate', label: 'Vehicle Rate (ms)', min: 500, max: 3000, step: 100 },
+  ],
+  'match-3': [
+    { key: 'gridSize', label: 'Grid Size', min: 6, max: 10, step: 1 },
+  ]
 }
 
 
@@ -120,6 +120,9 @@ export default function ParameterControls({ onNext }: ParameterControlsProps) {
                 onChange={(e) => handleParameterChange(param.key, Number(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
               />
+              <div className="absolute top-[-30px] left-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 transition-opacity hover:opacity-100">
+                Current: {gameConfig?.parameters?.[param.key] || 0}
+              </div>
             </div>
           ))}
         </div>
@@ -167,15 +170,20 @@ export default function ParameterControls({ onNext }: ParameterControlsProps) {
       </div>
 
       {/* Right Panel - Live Preview */}
-      <div className="bg-white rounded-2xl shadow-xl p-8">
-        <h3 className="text-2xl font-bold text-gray-800 mb-6">Live Preview</h3>
-        
-        {selectedTemplate && gameConfig && (
+      <div className="bg-white rounded-2xl shadow-xl p-8 flex flex-col">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-2xl font-bold text-gray-800">Preview</h3>
+        </div>
+
+        {selectedTemplate && gameConfig ? (
           <GameCanvas
-            key={JSON.stringify(gameConfig)} // Force re-render on any config change
             gameTemplate={selectedTemplate.id}
             config={gameConfig}
           />
+        ) : (
+          <div className="w-full aspect-[4/3] border-0 rounded-lg bg-gray-100 flex items-center justify-center">
+            <p className="text-gray-500">Select a template to begin</p>
+          </div>
         )}
       </div>
     </div>
