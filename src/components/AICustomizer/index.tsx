@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useGameStore } from '@/lib/store';
 import { Wand2, Loader2, ArrowRight } from 'lucide-react';
 import GameCanvas from '@/components/GameCanvas';
@@ -31,15 +31,17 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
 
   const [localTheme, setLocalTheme] = useState(gameConfig?.theme || '');
 
+  useEffect(() => {
+    if (gameConfig?.theme) {
+      setLocalTheme(gameConfig.theme);
+    }
+  }, [gameConfig?.theme]);
+
   const updateGlobalTheme = () => {
-    // Only update if the local value is different from the global one
     if (localTheme !== gameConfig?.theme) {
-      console.log(`Updating global theme to: "${localTheme}"`);
       updateGameConfig({ name: localTheme, theme: localTheme });
     }
   };
-
-
 
 
   const handleGenerateAsset = async (assetType: 'character' | 'background' | 'obstacle' | 'items') => {
@@ -240,3 +242,4 @@ export default function AICustomizer({ onNext }: AICustomizerProps) {
     </div>
   );
 }
+

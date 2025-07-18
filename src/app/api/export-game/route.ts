@@ -32,79 +32,68 @@ export async function POST(request: NextRequest) {
   try {
     const { template, config } = await request.json();
 
-    if (!template || !config) {
-      return NextResponse.json(
-        { error: 'Template and config are required' },
-        { status: 400 }
-      );
-    }
+    // ... validation ...
 
     const zip = new JSZip();
     const gamePath = path.join(process.cwd(), 'game-templates', template);
 
-    // Read the game files
+    // Read game files
     let gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
     const indexHtml = await fs.readFile(path.join(gamePath, 'index.html'), 'utf-8');
 
-    // Create a modified config with base64 assets
+    // Create modified config with base64 assets
     const modifiedConfig = JSON.parse(JSON.stringify(config));
     
-    // Convert assets to base64
+    // Handle player asset
     if (modifiedConfig.assets.player) {
       if (modifiedConfig.assets.player.startsWith('http')) {
         modifiedConfig.assets.player = await fetchImageAsBase64(modifiedConfig.assets.player);
       } else if (modifiedConfig.assets.player.startsWith('/games/')) {
-        const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(modifiedConfig.assets.player));
+        const assetPath = modifiedConfig.assets.player.replace('/games/', '');
+        const localPath = path.join(process.cwd(), 'public', 'games', assetPath);
         modifiedConfig.assets.player = await imageToBase64(localPath);
       }
     }
 
+    // Handle background asset
     if (modifiedConfig.assets.background) {
       if (modifiedConfig.assets.background.startsWith('http')) {
         modifiedConfig.assets.background = await fetchImageAsBase64(modifiedConfig.assets.background);
       } else if (modifiedConfig.assets.background.startsWith('/games/')) {
-        const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(modifiedConfig.assets.background));
+        const assetPath = modifiedConfig.assets.background.replace('/games/', '');
+        const localPath = path.join(process.cwd(), 'public', 'games', assetPath);
         modifiedConfig.assets.background = await imageToBase64(localPath);
       }
     }
 
+    // Handle obstacles
     if (modifiedConfig.assets.obstacles && Array.isArray(modifiedConfig.assets.obstacles)) {
       for (let i = 0; i < modifiedConfig.assets.obstacles.length; i++) {
-        const assetPath = modifiedConfig.assets.obstacles[i];
-        if (assetPath.startsWith('http')) {
-          modifiedConfig.assets.obstacles[i] = await fetchImageAsBase64(assetPath);
-        } else if (assetPath.startsWith('/games/')) {
-          const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(assetPath));
+        const asset = modifiedConfig.assets.obstacles[i];
+        if (asset.startsWith('http')) {
+          modifiedConfig.assets.obstacles[i] = await fetchImageAsBase64(asset);
+        } else if (asset.startsWith('/games/')) {
+          const assetPath = asset.replace('/games/', '');
+          const localPath = path.join(process.cwd(), 'public', 'games', assetPath);
           modifiedConfig.assets.obstacles[i] = await imageToBase64(localPath);
         }
       }
     }
 
+    // Handle items
     if (modifiedConfig.assets.items && Array.isArray(modifiedConfig.assets.items)) {
       for (let i = 0; i < modifiedConfig.assets.items.length; i++) {
-        if (modifiedConfig.assets.items[i].startsWith('http')) {
-          modifiedConfig.assets.items[i] = await fetchImageAsBase64(modifiedConfig.assets.items[i]);
-        } else if (modifiedConfig.assets.items[i].startsWith('/games/')) {
-          const localPath = path.join(process.cwd(), 'game-templates', template, 'assets', path.basename(modifiedConfig.assets.items[i]));
+        const asset = modifiedConfig.assets.items[i];
+        if (asset.startsWith('http')) {
+          modifiedConfig.assets.items[i] = await fetchImageAsBase64(asset);
+        } else if (asset.startsWith('/games/')) {
+          const assetPath = asset.replace('/games/', '');
+          const localPath = path.join(process.cwd(), 'public', 'games', assetPath);
           modifiedConfig.assets.items[i] = await imageToBase64(localPath);
         }
       }
     }
 
-    // Convert default assets to base64
-    const defaultAssets: Record<string, string> = {};
-    try {
-      const assetsPath = path.join(gamePath, 'assets');
-      const assetFiles = await fs.readdir(assetsPath);
-      
-      for (const file of assetFiles) {
-        if (file.endsWith('.png') || file.endsWith('.jpg')) {
-          const filePath = path.join(assetsPath, file);
-          const base64Data = await imageToBase64(filePath);
-          const assetKey = file.replace(/\.(png|jpg)$/, '');
-          defaultAssets[assetKey] = base64Data;
-        }
-      }
     } catch (e) {
       console.log('No default assets folder found');
     }
