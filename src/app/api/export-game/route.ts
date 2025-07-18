@@ -32,24 +32,19 @@ export async function POST(request: NextRequest) {
   try {
     const { template, config } = await request.json();
 
-    if (!template || !config) {
-      return NextResponse.json(
-        { error: 'Template and config are required' },
-        { status: 400 }
-      );
-    }
+    // ... validation ...
 
     const zip = new JSZip();
     const gamePath = path.join(process.cwd(), 'public', 'games', template);
 
-    // Read the game files
+    // Read game files
     let gameJs = await fs.readFile(path.join(gamePath, 'game.js'), 'utf-8');
     const indexHtml = await fs.readFile(path.join(gamePath, 'index.html'), 'utf-8');
 
-    // Create a modified config with base64 assets
+    // Create modified config with base64 assets
     const modifiedConfig = JSON.parse(JSON.stringify(config));
-    
-    // Convert assets to base64
+
+    // Handle player asset
     if (modifiedConfig.assets.player) {
       if (modifiedConfig.assets.player.startsWith('http')) {
         modifiedConfig.assets.player = await fetchImageAsBase64(modifiedConfig.assets.player);
@@ -59,6 +54,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Handle background asset
     if (modifiedConfig.assets.background) {
       if (modifiedConfig.assets.background.startsWith('http')) {
         modifiedConfig.assets.background = await fetchImageAsBase64(modifiedConfig.assets.background);
@@ -68,6 +64,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Handle obstacles
     if (modifiedConfig.assets.obstacles && Array.isArray(modifiedConfig.assets.obstacles)) {
       for (let i = 0; i < modifiedConfig.assets.obstacles.length; i++) {
         if (modifiedConfig.assets.obstacles[i].startsWith('http')) {
@@ -79,6 +76,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Handle items
     if (modifiedConfig.assets.items && Array.isArray(modifiedConfig.assets.items)) {
       for (let i = 0; i < modifiedConfig.assets.items.length; i++) {
         if (modifiedConfig.assets.items[i].startsWith('http')) {
@@ -90,26 +88,12 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Convert default assets to base64
-    const defaultAssets: Record<string, string> = {};
-    try {
-      const assetsPath = path.join(gamePath, 'assets');
-      const assetFiles = await fs.readdir(assetsPath);
-      
-      for (const file of assetFiles) {
-        if (file.endsWith('.png') || file.endsWith('.jpg')) {
-          const filePath = path.join(assetsPath, file);
-          const base64Data = await imageToBase64(filePath);
-          const assetKey = file.replace(/\.(png|jpg)$/, '');
-          defaultAssets[assetKey] = base64Data;
-        }
-      }
-    } catch (e) {
-      console.log('No default assets folder found');
-    }
+  } catch (e) {
+    console.log('No default assets folder found');
+  }
 
-    // Create a self-contained game.js with embedded assets
-    const gameJsContent = `
+  // Create a self-contained game.js with embedded assets
+  const gameJsContent = `
 // Embedded default assets
 const DEFAULT_ASSETS = ${JSON.stringify(defaultAssets, null, 2)};
 
@@ -119,21 +103,21 @@ window.GAME_CONFIG = ${JSON.stringify(modifiedConfig, null, 2)};
 ${gameJs}
 `;
 
-    // Update all default asset loading to use embedded assets
-    let modifiedGameJs = gameJsContent;
-    
-    // Replace all default asset loading patterns
-    const assetPatterns = [
-      { pattern: /this\.load\.image\('([^']+)-default',\s*'[^']+'\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1-default', DEFAULT_ASSETS['$1']); }" },
-      { pattern: /this\.load\.image\('([^']+)',\s*'\/games\/[^\/]+\/assets\/([^']+)\.png'\);/g, replacement: "if (DEFAULT_ASSETS['$2']) { this.textures.addBase64('$1', DEFAULT_ASSETS['$2']); }" }
-    ];
+  // Update all default asset loading to use embedded assets
+  let modifiedGameJs = gameJsContent;
 
-    assetPatterns.forEach(({ pattern, replacement }) => {
-      modifiedGameJs = modifiedGameJs.replace(pattern, replacement);
-    });
+  // Replace all default asset loading patterns
+  const assetPatterns = [
+    { pattern: /this\.load\.image\('([^']+)-default',\s*'[^']+'\);/g, replacement: "if (DEFAULT_ASSETS['$1']) { this.textures.addBase64('$1-default', DEFAULT_ASSETS['$1']); }" },
+    { pattern: /this\.load\.image\('([^']+)',\s*'\/games\/[^\/]+\/assets\/([^']+)\.png'\);/g, replacement: "if (DEFAULT_ASSETS['$2']) { this.textures.addBase64('$1', DEFAULT_ASSETS['$2']); }" }
+  ];
 
-    // Create a minimal HTML file
-    const modifiedHtml = `<!DOCTYPE html>
+  assetPatterns.forEach(({ pattern, replacement }) => {
+    modifiedGameJs = modifiedGameJs.replace(pattern, replacement);
+  });
+
+  // Create a minimal HTML file
+  const modifiedHtml = `<!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
@@ -162,30 +146,30 @@ ${gameJs}
 </body>
 </html>`;
 
-    // Add files to zip
-    zip.file('index.html', modifiedHtml);
-    zip.file('game.js', modifiedGameJs);
-    zip.file('config.json', JSON.stringify(modifiedConfig, null, 2));
-    zip.file('README.txt', `${config.name}
+  // Add files to zip
+  zip.file('index.html', modifiedHtml);
+  zip.file('game.js', modifiedGameJs);
+  zip.file('config.json', JSON.stringify(modifiedConfig, null, 2));
+  zip.file('README.txt', `${config.name}
     
 This game is fully self-contained. Just open index.html in any web browser to play!
 
 Game created with GameGen AI - No coding required!`);
 
-    // Generate the zip
-    const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
+  // Generate the zip
+  const zipBuffer = await zip.generateAsync({ type: 'nodebuffer' });
 
-    return new NextResponse(zipBuffer, {
-      headers: {
-        'Content-Type': 'application/zip',
-        'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`
-      }
-    });
-  } catch (error) {
-    console.error('Export error:', error);
-    return NextResponse.json(
-      { error: 'Failed to export game: ' + (error as Error).message },
-      { status: 500 }
-    );
-  }
+  return new NextResponse(zipBuffer, {
+    headers: {
+      'Content-Type': 'application/zip',
+      'Content-Disposition': `attachment; filename="${config.name.toLowerCase().replace(/\s+/g, '-')}-game.zip"`
+    }
+  });
+} catch (error) {
+  console.error('Export error:', error);
+  return NextResponse.json(
+    { error: 'Failed to export game: ' + (error as Error).message },
+    { status: 500 }
+  );
+}
 }
