@@ -74,6 +74,10 @@ class FlappyBirdGame extends Phaser.Scene {
     // Set background color first
     this.cameras.main.setBackgroundColor('#87CEEB');
 
+    if (this.gameConfig.debug) {
+      this.physics.world.createDebugGraphic();
+    }
+
     // Wait a frame to ensure textures are ready
     this.time.delayedCall(100, () => {
       this.setupGame();
@@ -90,7 +94,8 @@ class FlappyBirdGame extends Phaser.Scene {
 
     // Background
     const bg = this.add.image(400, 300, bgAsset);
-    bg.setDisplaySize(800, 600);
+    bg.setDisplaySize(800, 600); // Always scale to game size
+    bg.setDepth(-1)
 
     // Bird with adjusted collision box
     this.bird = this.physics.add.sprite(250, 300, birdAsset);
@@ -179,33 +184,39 @@ class FlappyBirdGame extends Phaser.Scene {
   }
 
   spawnPipe() {
-    const gap = this.gameConfig.parameters?.gapSize || 120;
+    const gap = this.gameConfig.parameters?.gapSize || 250;
     const pipeTop = Phaser.Math.Between(100, 400 - gap);
-    const pipeTargetWidth = 80; // Fixed width for pipes
+
+    const pipeTargetWidth = 80;
     const pipeTexture = this.textures.get(this.pipeAsset);
     const pipeFrame = pipeTexture.get(0);
     const pipeScale = pipeTargetWidth / pipeFrame.width;
 
     // Top pipe
     const topPipe = this.pipes.create(850, pipeTop, this.pipeAsset);
-    topPipe.setScale(pipeScale);
     topPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     topPipe.setOrigin(0.5, 1);
     topPipe.setImmovable(true);
+    topPipe.setScale(pipeScale);
 
-    const pipeWidth = topPipe.width * pipeScale;
-    topPipe.body.setSize(pipeWidth * 0.8, topPipe.height * 0.5); // 80% width for more forgiving gameplay
+    const visualWidth = pipeFrame.width * pipeScale;
+    const collisionWidth = 1; // Very thin collision width (like paper)
+    const collisionHeight = pipeFrame.height * pipeScale * 0;
+
+    topPipe.body.setSize(collisionWidth, collisionHeight);
+    // Center the collision box horizontally
+    topPipe.body.setOffset((visualWidth - collisionWidth) / 2, 0);
 
     // Bottom pipe
     const bottomPipe = this.pipes.create(850, pipeTop + gap, this.pipeAsset);
     bottomPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     bottomPipe.setOrigin(0.5, 0);
     bottomPipe.setFlipY(true);
-    topPipe.setScale(pipeScale);
+    bottomPipe.setScale(pipeScale);
     bottomPipe.setImmovable(true);
 
-    bottomPipe.body.setSize(pipeWidth * 0.8, bottomPipe.height * 0.5);
-    bottomPipe.body.setOffset(pipeWidth * 0.1, 0);
+    bottomPipe.body.setSize(collisionWidth, collisionHeight);
+    bottomPipe.body.setOffset((visualWidth - collisionWidth) / 2, 0);
   }
 
   gameOver() {
@@ -256,7 +267,7 @@ window.addEventListener('load', () => {
       default: 'arcade',
       arcade: {
         gravity: { y: 0 },
-        debug: false
+        debug: true
       }
     },
     scene: FlappyBirdGame

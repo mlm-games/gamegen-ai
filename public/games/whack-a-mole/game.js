@@ -51,7 +51,9 @@ class WhackAMoleGame extends Phaser.Scene {
     const moleAsset = this.textures.exists('mole') ? 'mole' : 'mole-default';
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
 
-    this.add.image(400, 300, bgAsset);
+    const bg = this.add.image(400, 300, bgAsset);
+    bg.setDisplaySize(800, 600);
+    bg.setDepth(-1);
 
     const positions = [
       { x: 200, y: 250 }, { x: 400, y: 250 }, { x: 600, y: 250 },

@@ -45,7 +45,9 @@ class Match3Game extends Phaser.Scene {
 
   setupGame() {
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
-    this.add.image(400, 300, bgAsset).setDisplaySize(800, 600);
+    const bg = this.add.image(400, 300, bgAsset);
+    bg.setDisplaySize(800, 600); // Always scale to game size
+    bg.setDepth(-1)
 
     this.grid = Array(this.gridSize).fill(null).map(() => Array(this.gridSize).fill(null));
     this.gems = this.add.group();

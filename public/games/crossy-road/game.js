@@ -44,7 +44,9 @@ class CrossyRoadGame extends Phaser.Scene {
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const vehicleAsset = this.textures.exists('vehicle') ? 'vehicle' : 'vehicle-default';
 
-    this.add.image(400, 300, bgAsset);
+    const bg = this.add.image(400, 300, bgAsset);
+    bg.setDisplaySize(800, 600); // Always scale to game size
+    bg.setDepth(-1)
 
     // Create lanes
     for (let i = 0; i < 12; i++) {
