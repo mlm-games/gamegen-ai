@@ -83,12 +83,18 @@ class Match3Game extends Phaser.Scene {
   }
 
   addGem(row, col, type, startX, startY) {
-    const colors = ['red', 'blue', 'green', 'yellow', 'purple', 'orange'];
     const gemAsset = this.textures.exists('gem' + type) ? 'gem' + type : 'gem-default' + type;
     const x = startX + col * this.tileSize + this.tileSize / 2;
     const y = startY + row * this.tileSize + this.tileSize / 2;
     const gem = this.gems.create(x, y, gemAsset);
-    gem.setDisplaySize(this.tileSize * 0.9, this.tileSize * 0.9);
+
+    // Dynamic scaling based on tile size
+    const targetSize = this.tileSize * 0.8; // 80% of tile size
+    const gemTexture = this.textures.get(gemAsset);
+    const gemFrame = gemTexture.get(0);
+    const scale = targetSize / Math.max(gemFrame.width, gemFrame.height);
+    gem.setScale(scale);
+
     gem.setInteractive();
     gem.type = type;
     gem.gridPos = { row, col };

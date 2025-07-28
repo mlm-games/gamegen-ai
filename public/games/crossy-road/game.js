@@ -61,7 +61,11 @@ class CrossyRoadGame extends Phaser.Scene {
     }
 
     this.player = this.physics.add.sprite(400, 575, playerAsset);
-    this.player.setScale(0.8);
+    const targetHeight = 40; // Fixed size for player
+    const playerTexture = this.textures.get(playerAsset);
+    const playerFrame = playerTexture.get(0);
+    const scale = targetHeight / playerFrame.height;
+    this.player.setScale(scale);
     this.player.setDepth(10);
     this.player.setCollideWorldBounds(true);
 
@@ -159,12 +163,18 @@ class CrossyRoadGame extends Phaser.Scene {
     const speed = lane.speed || (this.gameConfig.parameters.speed || 150) * (Math.random() > 0.5 ? 1 : -1);
     const side = speed > 0 ? -50 : 850;
 
+    const vehicleTargetHeight = 40; // Fixed size for vehicles
+    const vehicleTexture = this.textures.get(vehicleAsset);
+    const vehicleFrame = vehicleTexture.get(0);
+    const vehicleScale = vehicleTargetHeight / vehicleFrame.height;
+
     const vehicle = this.vehicles.create(side, lane.y, vehicleAsset);
-    vehicle.setVelocityX(speed);
+    vehicle.setScale(vehicleScale); vehicle.setVelocityX(speed);
 
     if (speed < 0) {
       vehicle.setFlipX(true);
     }
+
   }
 
   showEndMessage(message) {

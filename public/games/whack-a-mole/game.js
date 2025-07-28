@@ -61,6 +61,13 @@ class WhackAMoleGame extends Phaser.Scene {
     positions.forEach((pos) => {
       this.add.image(pos.x, pos.y, 'hole-default');
       const mole = this.add.sprite(pos.x, pos.y - 20, moleAsset);
+
+      const targetHeight = 80; // Fixed size for moles
+      const moleTexture = this.textures.get(moleAsset);
+      const moleFrame = moleTexture.get(0);
+      const scale = targetHeight / moleFrame.height;
+      mole.setScale(scale);
+
       mole.setInteractive();
       mole.setVisible(false);
       mole.on('pointerdown', () => this.whackMole(mole));

@@ -36,7 +36,7 @@ class EndlessRunnerGame extends Phaser.Scene {
     this.load.image('obstacle-default', '/games/endless-runner/assets/obstacle.png');
     this.load.image('ground-default', '/games/endless-runner/assets/ground.png');
 
-    // New: Load particles for jump effect
+    // Load particles for jump effect
     this.load.image('particle', 'https://labs.phaser.io/assets/particles/white.png'); // Placeholder particle
   }
 
@@ -50,7 +50,7 @@ class EndlessRunnerGame extends Phaser.Scene {
     const bgAsset = this.textures.exists('background') ? 'background' : 'background-default';
     const obstacleAsset = this.textures.exists('obstacle') ? 'obstacle' : 'obstacle-default';
 
-    // New: Parallax background layers for better looks
+    // Parallax background layers for better looks
     this.bgFar = this.add.tileSprite(400, 300, 800, 600, bgAsset).setDepth(0);
     this.bgNear = this.add.tileSprite(400, 300, 800, 600, bgAsset).setDepth(1).setAlpha(0.8); // Slightly overlay for depth
 
@@ -58,11 +58,18 @@ class EndlessRunnerGame extends Phaser.Scene {
     this.ground.create(400, 580, 'ground-default').setScale(2, 1).refreshBody();
 
     this.player = this.physics.add.sprite(100, 450, playerAsset);
+
+    const targetHeight = 80; // Fixed size for player
+    const playerTexture = this.textures.get(playerAsset);
+    const playerFrame = playerTexture.get(0);
+    const scale = targetHeight / playerFrame.height;
+    this.player.setScale(scale);
+
     this.player.setBounce(0.2);
     this.player.setCollideWorldBounds(true);
     this.player.setGravityY(this.gameConfig.parameters.gravity || 800);
 
-    // New: Jump particles
+    // Jump particles
     this.jumpParticles = this.add.particles(0, 0, 'particle', {
       speed: 100,
       scale: { start: 0.1, end: 0 },
@@ -80,16 +87,16 @@ class EndlessRunnerGame extends Phaser.Scene {
       loop: true
     });
 
-    // Improved score text with shadow
+    // score text with shadow
     this.scoreText = this.add.text(16, 16, 'Score: 0', {
       fontSize: '32px',
       fill: '#fff',
       stroke: '#000',
       strokeThickness: 4,
-      shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 4, stroke: true, fill: true } // New: Shadow for better visibility
+      shadow: { offsetX: 2, offsetY: 2, color: '#000', blur: 4, stroke: true, fill: true } // Shadow for better visibility
     });
 
-    // New: Game over text (hidden initially)
+    // Game over text (hidden initially)
     this.gameOverText = this.add.text(400, 250, 'Game Over!\nScore: 0\nClick to Restart', {
       fontSize: '48px',
       fill: '#fff',
@@ -114,7 +121,7 @@ class EndlessRunnerGame extends Phaser.Scene {
   update(time, delta) {
     if (this.isGameOver) return;
 
-    // Improved: Use delta for smooth movement regardless of framerate
+    // Use delta for smooth movement regardless of framerate
     const speedFactor = (this.gameSpeed / 60) * (delta / 16.67); // Normalize to 60fps
 
     // Parallax scrolling
@@ -137,13 +144,19 @@ class EndlessRunnerGame extends Phaser.Scene {
   jump() {
     if (this.player.body.touching.down) {
       this.player.setVelocityY(this.gameConfig.parameters.jumpVelocity || -400);
-      // New: Emit particles on jump for visual flair
+      // Emit particles on jump for visual flair
       this.jumpParticles.emitParticleAt(this.player.x, this.player.y + 20, 20);
     }
   }
 
   spawnObstacle(obstacleAsset) {
+    const obstacleTargetHeight = 60; // Fixed size for obstacles
+    const obstacleTexture = this.textures.get(obstacleAsset);
+    const obstacleFrame = obstacleTexture.get(0);
+    const obstacleScale = obstacleTargetHeight / obstacleFrame.height;
+
     const obstacle = this.obstacles.create(900, 515, obstacleAsset);
+    obstacle.setScale(obstacleScale);
     obstacle.setImmovable(true);
     obstacle.body.setAllowGravity(false);
   }

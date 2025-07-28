@@ -93,17 +93,15 @@ class FlappyBirdGame extends Phaser.Scene {
     bg.setDisplaySize(800, 600);
 
     // Bird with adjusted collision box
-    this.bird = this.physics.add.sprite(100, 300, birdAsset);
-    this.bird.setGravityY(this.gameConfig.parameters?.gravity || 800);
-    this.bird.setCollideWorldBounds(true);
-
-    // Calculate proper scale to fit game dimensions
-    const targetHeight = 40; // Target height in pixels
+    this.bird = this.physics.add.sprite(250, 300, birdAsset);
+    const targetHeight = 40; // Fixed size for bird
     const birdTexture = this.textures.get(birdAsset);
     const birdFrame = birdTexture.get(0);
     const scale = targetHeight / birdFrame.height;
-
     this.bird.setScale(scale);
+    this.bird.setGravityY(this.gameConfig.parameters?.gravity || 800);
+    this.bird.setCollideWorldBounds(true);
+
 
     // Adjust collision box to help with fun
     const birdWidth = birdFrame.width * scale;
@@ -183,18 +181,19 @@ class FlappyBirdGame extends Phaser.Scene {
   spawnPipe() {
     const gap = this.gameConfig.parameters?.gapSize || 120;
     const pipeTop = Phaser.Math.Between(100, 400 - gap);
-    const pipeScaleX = 0.5;
-    const pipeScaleY = 1;
+    const pipeTargetWidth = 80; // Fixed width for pipes
+    const pipeTexture = this.textures.get(this.pipeAsset);
+    const pipeFrame = pipeTexture.get(0);
+    const pipeScale = pipeTargetWidth / pipeFrame.width;
 
     // Top pipe
     const topPipe = this.pipes.create(850, pipeTop, this.pipeAsset);
+    topPipe.setScale(pipeScale);
     topPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     topPipe.setOrigin(0.5, 1);
     topPipe.setImmovable(true);
 
-    topPipe.setScale(pipeScaleX, pipeScaleY);
-
-    const pipeWidth = topPipe.width * pipeScaleX;
+    const pipeWidth = topPipe.width * pipeScale;
     topPipe.body.setSize(pipeWidth * 0.8, topPipe.height * 0.5); // 80% width for more forgiving gameplay
 
     // Bottom pipe
@@ -202,7 +201,7 @@ class FlappyBirdGame extends Phaser.Scene {
     bottomPipe.setVelocityX(-(this.gameConfig.parameters?.pipeSpeed || 200));
     bottomPipe.setOrigin(0.5, 0);
     bottomPipe.setFlipY(true);
-    bottomPipe.setScale(pipeScaleX, pipeScaleY);
+    topPipe.setScale(pipeScale);
     bottomPipe.setImmovable(true);
 
     bottomPipe.body.setSize(pipeWidth * 0.8, bottomPipe.height * 0.5);
