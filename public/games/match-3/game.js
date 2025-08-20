@@ -82,6 +82,7 @@ class Match3Game extends Phaser.Scene {
       }
     }
     this.canMove = true;
+    this.ensurePlayable();
   }
 
   addGem(row, col, type, startX, startY) {
@@ -187,6 +188,69 @@ class Match3Game extends Phaser.Scene {
     return Array.from(matches);
   }
 
+  hasPossibleMoves() {
+    // Try all adjacent swaps in-memory and check for a match
+    const trySwapAndCheck = (r1, c1, r2, c2) => {
+      const a = this.grid[r1][c1];
+      const b = this.grid[r2][c2];
+      if (!a || !b) return false;
+      // swap types temporarily
+      const at = a.type; const bt = b.type;
+      a.type = bt; b.type = at;
+
+      const found = this.simulateFindMatchAt(r1, c1) || this.simulateFindMatchAt(r2, c2);
+
+      // revert
+      a.type = at; b.type = bt;
+      return found;
+    };
+
+    for (let r = 0; r < this.gridSize; r++) {
+      for (let c = 0; c < this.gridSize; c++) {
+        if (c + 1 < this.gridSize && trySwapAndCheck(r, c, r, c + 1)) return true;
+        if (r + 1 < this.gridSize && trySwapAndCheck(r, c, r + 1, c)) return true;
+      }
+    }
+    return false;
+  }
+
+  simulateFindMatchAt(row, col) {
+    const type = this.grid[row][col]?.type;
+    if (type === undefined) return false;
+
+    // horizontal
+    let count = 1;
+    for (let c = col - 1; c >= 0 && this.grid[row][c]?.type === type; c--) count++;
+    for (let c = col + 1; c < this.gridSize && this.grid[row][c]?.type === type; c++) count++;
+    if (count >= 3) return true;
+
+    // vertical
+    count = 1;
+    for (let r = row - 1; r >= 0 && this.grid[r][col]?.type === type; r--) count++;
+    for (let r = row + 1; r < this.gridSize && this.grid[r][col]?.type === type; r++) count++;
+    return count >= 3;
+  }
+
+  ensurePlayable() {
+    let safety = 0;
+    while (!this.hasPossibleMoves() && safety < 50) {
+      // reshuffle by reassigning types randomly
+      for (let r = 0; r < this.gridSize; r++) {
+        for (let c = 0; c < this.gridSize; c++) {
+          if (this.grid[r][c]) {
+            this.grid[r][c].type = Phaser.Math.Between(0, this.gemTypes - 1);
+            // Update texture if a custom gem exists for that type
+            const gemAsset = this.textures.exists('gem' + this.grid[r][c].type)
+              ? 'gem' + this.grid[r][c].type
+              : 'gem-default' + this.grid[r][c].type;
+            this.grid[r][c].setTexture(gemAsset);
+          }
+        }
+      }
+      safety++;
+    }
+  }
+
   handleMatches(matches) {
     this.score += matches.length * 10;
     this.scoreText.setText('Score: ' + this.score);
@@ -264,6 +328,7 @@ class Match3Game extends Phaser.Scene {
         if (newMatches.length > 0) {
           this.handleMatches(newMatches);
         } else {
+          this.ensurePlayable();
           this.canMove = true;
         }
       } else {

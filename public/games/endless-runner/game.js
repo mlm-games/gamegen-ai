@@ -121,22 +121,23 @@ class EndlessRunnerGame extends Phaser.Scene {
   update(time, delta) {
     if (this.isGameOver) return;
 
-    // Use delta for smooth movement regardless of framerate
-    const speedFactor = (this.gameSpeed / 60) * (delta / 16.67); // Normalize to 60fps
+    // Increase speed slightly over time for challenge
+    const base = this.gameConfig.parameters.speed || 200;
+    this.gameSpeed = base + Math.floor(this.score * 2);
+
+    const deltaSec = delta / 1000;
 
     // Parallax scrolling
-    this.bgFar.tilePositionX += speedFactor * 0.5; // Slower far layer
-    this.bgNear.tilePositionX += speedFactor * 1.2; // Faster near layer
+    this.bgFar.tilePositionX += this.gameSpeed * 0.2 * deltaSec;
+    this.bgNear.tilePositionX += this.gameSpeed * 0.5 * deltaSec;
 
+    // Cleanup and scoring when obstacles leave screen
     this.obstacles.children.iterate(obstacle => {
-      if (obstacle) {
-        obstacle.x -= speedFactor * 3; // Adjusted for delta
-
-        if (obstacle.x < -50) {
-          obstacle.destroy();
-          this.score++;
-          this.scoreText.setText('Score: ' + this.score);
-        }
+      if (!obstacle) return;
+      if (obstacle.x < -50) {
+        obstacle.destroy();
+        this.score++;
+        this.scoreText.setText('Score: ' + this.score);
       }
     });
   }
@@ -150,7 +151,7 @@ class EndlessRunnerGame extends Phaser.Scene {
   }
 
   spawnObstacle(obstacleAsset) {
-    const obstacleTargetHeight = 60; // Fixed size for obstacles
+    const obstacleTargetHeight = 60; // 512→scaled
     const obstacleTexture = this.textures.get(obstacleAsset);
     const obstacleFrame = obstacleTexture.get(0);
     const obstacleScale = obstacleTargetHeight / obstacleFrame.height;
@@ -159,6 +160,9 @@ class EndlessRunnerGame extends Phaser.Scene {
     obstacle.setScale(obstacleScale);
     obstacle.setImmovable(true);
     obstacle.body.setAllowGravity(false);
+
+    // Use physics velocity (scaled to feel similar to the old -x movement)
+    obstacle.setVelocityX(-this.gameSpeed * 1.5);
   }
 
   handleGameOver() {

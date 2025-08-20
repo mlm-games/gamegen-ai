@@ -49,27 +49,36 @@ class CrossyRoadGame extends Phaser.Scene {
     bg.setDepth(-1)
 
     // Create lanes
+    this.lanes = [];
     for (let i = 0; i < 12; i++) {
       const y = 575 - i * 50;
       const isRoad = i > 0 && i < 11 && i % 2 !== 0;
 
       if (isRoad) {
         this.add.tileSprite(400, y, 800, 50, 'road-default');
-        this.lanes.push({ y: y, type: 'road', speed: Phaser.Math.Between(100, 200) * (Math.random() > 0.5 ? 1 : -1) });
+        const base = this.gameConfig.parameters.speed || 150;
+        const variance = Phaser.Math.FloatBetween(0.8, 1.2);
+        const signed = Math.random() > 0.5 ? 1 : -1;
+        this.lanes.push({ y, type: 'road', speed: base * variance * signed });
       } else {
         this.add.tileSprite(400, y, 800, 50, 'grass-default');
-        this.lanes.push({ y: y, type: 'grass', speed: 0 });
+        this.lanes.push({ y, type: 'grass', speed: 0 });
       }
     }
 
     this.player = this.physics.add.sprite(400, 575, playerAsset);
-    const targetHeight = 40; // Fixed size for player
+    const targetHeight = 40; // 512→scaled
     const playerTexture = this.textures.get(playerAsset);
     const playerFrame = playerTexture.get(0);
     const scale = targetHeight / playerFrame.height;
     this.player.setScale(scale);
     this.player.setDepth(10);
     this.player.setCollideWorldBounds(true);
+
+    // Make body follow display size (slightly smaller for fair hits)
+    const pW = this.player.displayWidth * 0.85;
+    const pH = this.player.displayHeight * 0.85;
+    this.player.body.setSize(pW, pH, true);
 
     this.vehicles = this.physics.add.group();
 
@@ -171,12 +180,19 @@ class CrossyRoadGame extends Phaser.Scene {
     const vehicleScale = vehicleTargetHeight / vehicleFrame.height;
 
     const vehicle = this.vehicles.create(side, lane.y, vehicleAsset);
-    vehicle.setScale(vehicleScale); vehicle.setVelocityX(speed);
+    vehicle.setScale(vehicleScale);
+    vehicle.setVelocityX(speed);
+    vehicle.body.setAllowGravity(false);
+    vehicle.setImmovable(true);
+
+    // Collision box ~85% of display size for fairness
+    const vW = vehicle.displayWidth * 0.85;
+    const vH = vehicle.displayHeight * 0.85;
+    vehicle.body.setSize(vW, vH, true);
 
     if (speed < 0) {
       vehicle.setFlipX(true);
     }
-
   }
 
   showEndMessage(message) {
@@ -198,6 +214,7 @@ class CrossyRoadGame extends Phaser.Scene {
 
   gameOver() {
     if (!this.canMove) return;
+    this.cameras.main.shake(200, 0.01);
     this.showEndMessage('Game Over!\nScore: ' + this.score);
   }
 

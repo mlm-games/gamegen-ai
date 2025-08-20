@@ -114,13 +114,34 @@ class WhackAMoleGame extends Phaser.Scene {
 
     const randomMole = Phaser.Utils.Array.GetRandom(availableMoles);
     randomMole.setVisible(true);
-    randomMole.setData('out', true); // Mark as out
+    randomMole.setAlpha(0);
+    randomMole.setScale(randomMole.scale * 0.8);
+    randomMole.setData('out', true);
+
+    // Pop-up tween
+    this.tweens.add({
+      targets: randomMole,
+      alpha: 1,
+      scale: { from: randomMole.scale, to: randomMole.scale / 0.8 },
+      y: randomMole.y - 6,
+      duration: 120,
+      ease: 'Back.Out'
+    });
 
     const hideDelay = this.gameConfig.parameters.moleUpTime || 800;
     this.time.delayedCall(hideDelay, () => {
       if (randomMole.getData('out')) {
-        randomMole.setVisible(false);
-        randomMole.setData('out', false);
+        // Pop-down tween
+        this.tweens.add({
+          targets: randomMole,
+          alpha: 0,
+          y: randomMole.y + 6,
+          duration: 120,
+          onComplete: () => {
+            randomMole.setVisible(false);
+            randomMole.setData('out', false);
+          }
+        });
       }
     });
   }
@@ -131,6 +152,7 @@ class WhackAMoleGame extends Phaser.Scene {
       mole.setData('out', false); // Mark as whacked
       this.score++;
       this.scoreText.setText('Score: ' + this.score);
+      this.cameras.main.shake(60, 0.002);
 
       const hitText = this.add.text(mole.x, mole.y - 50, '+1', { fontSize: '24px', fill: '#ffdd00', stroke: '#000', strokeThickness: 2 }).setOrigin(0.5);
       this.tweens.add({
