@@ -107,8 +107,12 @@ export default function ParameterControls({ onNext }: ParameterControlsProps) {
                 <label className="text-sm font-medium text-gray-700">
                   {param.label}
                 </label>
-                <span className="text-sm font-mono bg-gray-100 px-2 py-1 rounded">
-                  {gameConfig?.parameters?.[param.key] || 0}
+                <span
+                  className="text-sm font-mono px-2 py-1 rounded border
+               bg-gray-100 text-gray-800 border-gray-200
+               dark:bg-gray-800 dark:text-gray-100 dark:border-gray-700"
+                >
+                  {gameConfig?.parameters?.[param.key] ?? 0}
                 </span>
               </div>
               <input
@@ -120,9 +124,6 @@ export default function ParameterControls({ onNext }: ParameterControlsProps) {
                 onChange={(e) => handleParameterChange(param.key, Number(e.target.value))}
                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer slider"
               />
-              <div className="absolute top-[-30px] left-0 text-xs bg-gray-800 text-white px-2 py-1 rounded opacity-0 transition-opacity hover:opacity-100">
-                Current: {gameConfig?.parameters?.[param.key] || 0}
-              </div>
             </div>
           ))}
         </div>

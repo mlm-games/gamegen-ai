@@ -311,3 +311,11 @@ select:focus {
 .dark .border-gray-200 {
   border-color: hsl(var(--border));
 }
+
+.dark .bg-gray-100 {
+  background-color: hsl(var(--muted));
+}
+
+.dark .border-gray-300 {
+  border-color: hsl(var(--border));
+}

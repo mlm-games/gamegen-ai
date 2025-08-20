@@ -154,7 +154,14 @@ export default function GameSelector({ onNext }: GameSelectorProps) {
             `}
           >
             <div className="aspect-video relative">
-              <Image src={template.thumbnail} alt={template.name} layout="fill" objectFit="cover" loading="lazy" className="bg-gray-200" />
+              <Image
+                src={template.thumbnail}
+                alt={template.name}
+                fill
+                sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                priority={false}
+                className="object-cover bg-gray-200"
+              />
             </div>
             <div className="p-4 bg-white">
               <h3 className="font-bold text-lg text-gray-800">{template.name}</h3>

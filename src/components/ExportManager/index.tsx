@@ -122,9 +122,9 @@ export default function ExportManager() {
         <div className="mt-8 pt-8 border-t border-gray-200">
           <h4 className="font-semibold text-gray-800 mb-3">How to use your game:</h4>
           <ol className="space-y-2 text-sm text-gray-600">
-            <li>1. Extract the downloaded ZIP file</li>
-            <li>2. Open the index.html file in any web browser</li>
-            <li>3. Share the folder with friends or host it online</li>
+            <li>1. Open the downloaded .html file in any modern web browser</li>
+            <li>2. Share the file directly or host it online (it’s self-contained)</li>
+            <li>3. If you need to embed elsewhere, upload the HTML as-is</li>
           </ol>
         </div>
       </div>

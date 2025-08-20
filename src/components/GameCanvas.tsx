@@ -33,7 +33,7 @@ export default function GameCanvas({ gameTemplate, config, onGameReady }: GameCa
   return (
     <div className="flex flex-col h-full relative">
       {isLoading && (
-        <div className="absolute inset-0 flex items-center justify-center bg-white/80 z-10">
+        <div className="absolute inset-0 flex items-center justify-center bg-white/80 dark:bg-black/50 z-10">
           <Loader2 className="w-8 h-8 animate-spin text-purple-600" />
         </div>
       )}
